@@ -1,0 +1,6 @@
+pandas
+anthropic
+python-dotenv
+pydantic
+pytest
+jupyter
