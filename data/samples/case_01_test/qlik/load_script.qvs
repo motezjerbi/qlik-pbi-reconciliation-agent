@@ -1,0 +1,113 @@
+///$tab Main
+SET ThousandSep=',';
+SET DecimalSep='.';
+SET MoneyThousandSep=',';
+SET MoneyDecimalSep='.';
+SET MoneyFormat='$#,##0.00;-$#,##0.00';
+SET TimeFormat='h:mm:ss TT';
+SET DateFormat='M/D/YYYY';
+SET TimestampFormat='M/D/YYYY h:mm:ss[.fff] TT';
+SET FirstWeekDay=6;
+SET BrokenWeeks=1;
+SET ReferenceDay=0;
+SET FirstMonthOfYear=1;
+SET CollationLocale='en-US';
+SET CreateSearchIndexOnReload=1;
+SET MonthNames='Jan;Feb;Mar;Apr;May;Jun;Jul;Aug;Sep;Oct;Nov;Dec';
+SET LongMonthNames='January;February;March;April;May;June;July;August;September;October;November;December';
+SET DayNames='Mon;Tue;Wed;Thu;Fri;Sat;Sun';
+SET LongDayNames='Monday;Tuesday;Wednesday;Thursday;Friday;Saturday;Sunday';
+SET NumericalAbbreviation='3:k;6:M;9:G;12:T;15:P;18:E;21:Z;24:Y;-3:m;-6:μ;-9:n;-12:p;-15:f;-18:a;-21:z;-24:y';
+
+///$tab Variables
+SET vCurrentYear = Year(Today());
+
+///$tab Mapping tables
+MAP_PRODUCT_GROUP_MAP:
+Mapping
+LOAD * INLINE [
+ProductID,ProductGroupe
+P1,Hard
+P2,ACC
+];
+
+///$tab Routine
+SUB LoadFile(vFileName, vTableName)
+
+    $(vTableName):
+    LOAD
+       *
+    FROM [lib://NAS_DATA_ESG/02_CLIMAT/IN/Cartographie/$(vFileName).csv]
+    (txt, codepage is 28591, embedded labels, delimiter is ';', msq);
+
+END SUB
+
+///$tab Dimensions
+//*********** Dim Customers *******//
+Customers:
+LOAD * INLINE [
+CustomerID,CustomerName,Segment
+C1,ABC Corp,Enterprise
+C2,XYZ Ltd,SMB
+C3,Delta Inc,Enterprise
+];
+
+left join(Customers)
+LOAD
+    CustomerID,
+    CustomerAdress
+FROM [lib://NAS_DATA_ESG/02_CLIMAT/IN/Cartographie/Address.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+//***********Dim Product ***************//
+Products_TEMP:
+LOAD * INLINE [
+ProductID,ProductName,Category
+P1,Laptop,Hardware
+P2,Mouse,Accessories
+P3,Monitor,Hardware
+];
+
+Products:
+LOAD
+*,
+ApplyMap('MAP_PRODUCT_GROUP_MAP',ProductID,'N/A') as ProductGroupe
+Resident Products_TEMP;
+
+DROP TABLE Products_TEMP;
+
+CALL LoadFile('Channels', 'SalesChannels');
+
+///$tab Facts
+//*******************Fact 1****************************//
+Sales:
+LOAD
+    OrderID,
+    Date(Date#(Date,'YYYY-MM-DD')) as OrderDate,
+    Year(Date#(Date,'YYYY-MM-DD')) as Year,
+    Month(Date#(Date,'YYYY-MM-DD')) as Month,
+    CustomerID,
+    ProductID,
+    ChannelID,
+    Region,
+    SalesAmount,
+    Quantity,
+    Margin
+INLINE [
+OrderID,Date,CustomerID,ProductID,ChannelID,Region,SalesAmount,Quantity,Margin
+1,2025-01-10,C1,P1,1,North,1200,3,200
+2,2025-01-15,C2,P2,2,South,800,2,150
+3,2025-02-01,C1,P3,3,East,1500,5,300
+4,2025-02-10,C3,P1,1,West,600,1,100
+5,2024-01-15,C1,P1,4,North,400,2,50
+6,2024-04-03,C2,P2,2,West,350,1,25
+7,2024-02-11,C4,P3,1,East,1000,4,500
+];
+
+//*******************Fact 2 ************************//
+SalesAgg:
+LOAD
+    CustomerID,
+    Sum(SalesAmount) as Sales
+Resident Sales
+Group By CustomerID;
