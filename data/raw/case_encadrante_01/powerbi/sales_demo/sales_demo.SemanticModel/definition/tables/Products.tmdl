@@ -1,0 +1,60 @@
+table Products
+
+	column 'Product ID'
+		dataType: string
+		sourceColumn: Product ID
+		summarizeBy: none
+
+	column 'Product Name'
+		dataType: string
+		sourceColumn: Product Name
+		summarizeBy: none
+
+	column Category
+		dataType: string
+		sourceColumn: Category
+		summarizeBy: none
+
+	column 'Product Groupe'
+		dataType: string
+		sourceColumn: Product Groupe
+		summarizeBy: none
+
+	partition Products = m
+		mode: import
+		source =
+			let
+			    Source = Table.FromRows(
+			        {
+			            {"P1", "Laptop", "Hardware"},
+			            {"P2", "Mouse", "Accessories"},
+			            {"P3", "Monitor", "Hardware"}
+			        },
+			        type table [ProductID = text, ProductName = text, Category = text]
+			    ),
+			    ProductGroupMap = Table.FromRows(
+			        {
+			            {"P1", "Hard"},
+			            {"P2", "ACC"}
+			        },
+			        type table [Key = text, GroupValue = text]
+			    ),
+			    JoinedWithGroup = Table.NestedJoin(Source, {"ProductID"}, ProductGroupMap, {"Key"}, "MappedGroup", JoinKind.LeftOuter),
+			    ExpandedGroup = Table.ExpandTableColumn(JoinedWithGroup, "MappedGroup", {"GroupValue"}, {"ProductGroupe"}),
+			    FilledNulls = Table.ReplaceValue(ExpandedGroup, null, "N/A", Replacer.ReplaceValue, {"ProductGroupe"}),
+			    RenamedColumns = Table.RenameColumns(FilledNulls, {
+			        {"ProductID", "Product ID"},
+			        {"ProductName", "Product Name"},
+			        {"ProductGroupe", "Product Groupe"}
+			    }),
+			    SelectedColumns = Table.SelectColumns(RenamedColumns, {"Product ID", "Product Name", "Category", "Product Groupe"}),
+			    Output = Table.TransformColumnTypes(SelectedColumns, {
+			        {"Product ID", type text},
+			        {"Product Name", type text},
+			        {"Category", type text},
+			        {"Product Groupe", type text}
+			    })
+			in
+			    Output
+
+	annotation PBI_ResultType = Table

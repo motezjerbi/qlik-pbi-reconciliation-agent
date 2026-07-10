@@ -1,0 +1,13 @@
+table SalesChannels
+
+	partition SalesChannels = m
+		mode: import
+		source =
+			let
+			    // TODO: update file path to the actual location of Channels.csv
+			    Source = Csv.Document(File.Contents("C:\data\Channels.csv"), [Delimiter=",", Columns=null, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+			    Output = Table.PromoteHeaders(Source, [PromoteAllScalars=true])
+			in
+			    Output
+
+	annotation PBI_ResultType = Table

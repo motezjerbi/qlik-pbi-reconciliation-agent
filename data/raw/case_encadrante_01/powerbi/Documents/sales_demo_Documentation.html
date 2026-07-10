@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html xmlns:o='urn:schemas-microsoft-com:office:office'
+      xmlns:w='urn:schemas-microsoft-com:office:word'
+      xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+<meta charset='utf-8'>
+<meta name='Generator' content='gemini-doc-agent'>
+<!--[if gte mso 9]>
+<xml><w:WordDocument><w:View>Print</w:View><w:Zoom>90</w:Zoom></w:WordDocument></xml>
+<![endif]-->
+<title>Documentation technique - sales_demo</title>
+<style>
+  body {
+    font-family: Calibri, Arial, sans-serif;
+    font-size: 11pt;
+    color: #1a1a1a;
+    margin: 2cm 2.5cm;
+    mso-margin-top-alt: auto;
+  }
+  h1 {
+    font-size: 20pt;
+    color: #1F3864;
+    border-bottom: 2px solid #1F3864;
+    padding-bottom: 4pt;
+    mso-style-next: Normal;
+  }
+  h2 {
+    font-size: 15pt;
+    color: #2E5090;
+    margin-top: 18pt;
+    border-bottom: 1px solid #2E5090;
+    padding-bottom: 2pt;
+    mso-style-next: Normal;
+  }
+  h3 {
+    font-size: 12pt;
+    color: #2E5090;
+    margin-top: 12pt;
+    mso-style-next: Normal;
+  }
+  p, li {
+    line-height: 1.5;
+    margin: 4pt 0;
+  }
+  .meta {
+    color: #555555;
+    font-size: 9.5pt;
+    margin-bottom: 14pt;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 10pt 0;
+    font-size: 9.5pt;
+    mso-table-lspace: 0pt;
+    mso-table-rspace: 0pt;
+  }
+  th {
+    background-color: #1F3864;
+    color: #FFFFFF;
+    padding: 5pt 7pt;
+    text-align: left;
+    font-weight: bold;
+    border: 1px solid #1F3864;
+  }
+  td {
+    padding: 4pt 7pt;
+    border: 1px solid #C0C0C0;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td {
+    background-color: #EEF2F8;
+  }
+  .badge {
+    display: inline-block;
+    padding: 1pt 5pt;
+    border-radius: 3pt;
+    font-size: 8.5pt;
+    font-weight: bold;
+  }
+  .badge-fact    { background: #FFDDC1; color: #7B2D00; }
+  .badge-dim     { background: #D1ECF1; color: #0C5460; }
+  .badge-measure { background: #D4EDDA; color: #155724; }
+  .badge-sem     { background: #E2E3E5; color: #383D41; }
+  code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 8.5pt;
+    background: #F4F4F4;
+    padding: 1pt 3pt;
+    border: 1px solid #DDDDDD;
+  }
+  pre {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 8.5pt;
+    background: #F8F8F8;
+    border: 1px solid #DDDDDD;
+    padding: 6pt;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+</style>
+</head>
+<body>
+<h1>Documentation technique &#8212; sales_demo</h1>
+<p class="meta">Généré automatiquement le 2026-07-01 14:18:55</p>
+<h2>1. Vue d&#8217;ensemble</h2>
+<p>Ce rapport Power BI, nommé 'sales_demo', présente une analyse des données de ventes. Le modèle de données est structuré autour d'une table de faits centrale, 'Sales', qui contient les transactions, et de tables de dimensions pour les clients ('Customers') et les produits ('Products'). Cette structure permet une analyse multidimensionnelle des performances commerciales.</p>
+<p>Le rapport inclut plusieurs pages, telles que 'Executive Overview' et 'Advanced Analytics', suggérant des niveaux d'analyse variés, allant du résumé de haut niveau à l'exploration de métriques détaillées. Les calculs sont centralisés dans une table dédiée aux mesures, '_Measures', qui contient des indicateurs de performance clés (KPIs) comme le total des ventes, la croissance annuelle et la marge moyenne.</p>
+<p>Les données sont intégrées à partir de plusieurs sources, incluant des données saisies manuellement dans Power Query, un fichier Excel et un fichier CSV. Le modèle utilise également des techniques avancées, comme une table de paramètres pour permettre une sélection dynamique des dimensions dans les visuels, offrant ainsi une expérience utilisateur interactive.</p>
+<h2>2. Synth&#232;se du mod&#232;le</h2>
+<ul><li><strong>Culture du modèle</strong>: en-US</li><li><strong>Nombre de tables</strong>: 6</li><li><strong>Nombre de colonnes</strong>: 23</li><li><strong>Nombre de mesures</strong>: 13</li><li><strong>Nombre de relations</strong>: 2</li><li><strong>Nombre de pages de rapport</strong>: 3</li><li><strong>Nombre de filtres de rapport</strong>: 0</li><li><strong>Nombre de visuels personnalisés</strong>: 0</li></ul>
+<h3>Points cl&#233;s</h3>
+<ul><li>Le modèle est organisé selon un schéma en étoile de base, avec la table de faits 'Sales' reliée aux dimensions 'Customers' et 'Products'.</li><li>Une table dédiée ('_Measures') centralise l'ensemble des 13 mesures DAX, ce qui constitue une bonne pratique pour la maintenance et la clarté du modèle.</li><li>Le modèle intègre une table de paramètres DAX ('Sales by Product Dimension Selector') pour permettre aux utilisateurs de changer dynamiquement l'axe d'analyse des produits dans les rapports.</li><li>Les données proviennent de sources hétérogènes (Excel, CSV, données entrées manuellement), consolidées via des requêtes Power Query.</li></ul>
+<h3>Pages du rapport</h3>
+<ul><li>Advanced Analytics <code>jyex</code></li><li>Executive Overview <code>mddprh</code></li><li>Advanced Metrics <code>ygzmvds</code></li></ul>
+<h2>3. Tables et r&#233;sum&#233;s</h2>
+<h3>Customers <span class="badge badge-sem">Semantic</span></h3>
+<p>Table de dimension contenant les informations sur les clients, telles que l'identifiant, le nom, le segment et l'adresse. Les données sont issues d'une combinaison de données saisies manuellement et d'un fichier externe Excel.</p>
+<ul><li><strong>Catégorie</strong>: Semantic</li><li><strong>Sources</strong>: Sheet1</li><li><strong>Colonnes</strong>: 4</li><li><strong>Mesures</strong>: 0</li></ul>
+<h3>_Measures <span class="badge badge-sem">Calculée (DAX)</span></h3>
+<p>Table technique calculée via DAX, servant de conteneur pour toutes les mesures du modèle. Elle n'est pas reliée aux autres tables et a pour but d'organiser les calculs.</p>
+<ul><li><strong>Catégorie</strong>: Calculée (DAX)</li><li><strong>Sources</strong>: non détectées</li><li><strong>Colonnes</strong>: 1</li><li><strong>Mesures</strong>: 13</li></ul>
+<h3>Products <span class="badge badge-sem">Semantic</span></h3>
+<p>Table de dimension décrivant les produits avec leur identifiant, nom, catégorie et un groupe personnalisé. Les données sont définies manuellement dans la requête Power Query.</p>
+<ul><li><strong>Catégorie</strong>: Semantic</li><li><strong>Sources</strong>: non détectées</li><li><strong>Colonnes</strong>: 4</li><li><strong>Mesures</strong>: 0</li></ul>
+<h3>Sales <span class="badge badge-sem">Semantic</span></h3>
+<p>Table de faits principale qui enregistre les transactions de vente. Elle contient des détails sur les commandes, les dates, les montants, les quantités et les marges, ainsi que les clés pour la relier aux dimensions.</p>
+<ul><li><strong>Catégorie</strong>: Semantic</li><li><strong>Sources</strong>: non détectées</li><li><strong>Colonnes</strong>: 11</li><li><strong>Mesures</strong>: 0</li></ul>
+<h3>SalesChannels <span class="badge badge-sem">Semantic</span></h3>
+<p>Table de dimension destinée à contenir les informations sur les canaux de vente. Les données sont importées depuis un fichier CSV externe. Les colonnes de cette table ne sont pas détectées.</p>
+<ul><li><strong>Catégorie</strong>: Semantic</li><li><strong>Sources</strong>: non détectées</li><li><strong>Colonnes</strong>: 0</li><li><strong>Mesures</strong>: 0</li></ul>
+<h3>Sales by Product Dimension Selector <span class="badge badge-sem">Calculée (DAX)</span></h3>
+<p>Table de paramètres calculée via DAX. Elle est utilisée pour permettre la sélection dynamique d'une colonne de la table 'Products' ('Product Name' ou 'Product ID') dans les visuels du rapport.</p>
+<ul><li><strong>Catégorie</strong>: Calculée (DAX)</li><li><strong>Sources</strong>: non détectées</li><li><strong>Colonnes</strong>: 3</li><li><strong>Mesures</strong>: 0</li></ul>
+<h2>4. Relations</h2>
+<table>
+<thead>
+<tr>
+<th>Table source</th>
+<th>Colonne source</th>
+<th>Table cible</th>
+<th>Colonne cible</th>
+<th>Cardinalité</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sales</td>
+<td>Customer ID</td>
+<td>Customers</td>
+<td>Customer ID</td>
+<td>non detectee</td>
+</tr>
+<tr>
+<td>Sales</td>
+<td>Product ID</td>
+<td>Products</td>
+<td>Product ID</td>
+<td>non detectee</td>
+</tr>
+</tbody>
+</table>
+<h2>5. Explication automatique des mesures</h2>
+<table>
+<thead>
+<tr>
+<th>Dossier</th>
+<th>Mesure</th>
+<th>Table source</th>
+<th>Colonne source</th>
+<th>Explication</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>General</td>
+<td>Total Sales</td>
+<td>Sales</td>
+<td>Sales Amount</td>
+<td>Calcule la somme totale des montants des ventes à partir de la colonne 'Sales Amount' de la table 'Sales'.</td>
+</tr>
+<tr>
+<td>General</td>
+<td>Selected Metric Value</td>
+<td>Sales</td>
+<td>Sales Amount</td>
+<td>Calcule la somme totale des montants des ventes. L'expression est identique à celle de la mesure [Total Sales].</td>
+</tr>
+<tr>
+<td>General</td>
+<td>Previous Year Sales</td>
+<td>Sales</td>
+<td>Order Date</td>
+<td>Calcule le total des ventes pour la même période de l'année précédente en se basant sur la mesure [Total Sales].</td>
+</tr>
+<tr>
+<td>General</td>
+<td>Sales Year Over Year Growth</td>
+<td>non detecte</td>
+<td>non detectee</td>
+<td>Calcule le taux de croissance des ventes en pourcentage en comparant le [Total Sales] avec le [Previous Year Sales].</td>
+</tr>
+<tr>
+<td>General</td>
+<td>Latest Year Sales</td>
+<td>Sales</td>
+<td>Sales Amount</td>
+<td>Calcule le total des ventes pour l'année la plus récente disponible dans l'ensemble du jeu de données, indépendamment des filtres de date appliqués.</td>
+</tr>
+<tr>
+<td>General</td>
+<td>Current Year Sales</td>
+<td>Sales</td>
+<td>Year</td>
+<td>Calcule le total des ventes pour l'année sélectionnée dans le contexte de filtre actuel.</td>
+</tr>
+<tr>
+<td>General</td>
+<td>Average Margin</td>
+<td>Sales</td>
+<td>Margin</td>
+<td>Calcule la marge moyenne à partir de la colonne 'Margin' de la table 'Sales'.</td>
+</tr>
+<tr>
+<td>General</td>
+<td>Total Orders</td>
+<td>Sales</td>
+<td>Order ID</td>
+<td>Compte le nombre de commandes uniques en se basant sur la colonne 'Order ID'.</td>
+</tr>
+<tr>
+<td>General</td>
+<td>Latest Month Sales</td>
+<td>Sales</td>
+<td>Order Date</td>
+<td>Calcule le total des ventes pour le mois le plus récent disponible dans l'ensemble du jeu de données.</td>
+</tr>
+<tr>
+<td>General</td>
+<td>Year To Date Sales</td>
+<td>Sales</td>
+<td>Order Date</td>
+<td>Calcule la somme cumulative des ventes depuis le début de l'année jusqu'à la date sélectionnée dans le contexte de filtre.</td>
+</tr>
+<tr>
+<td>General</td>
+<td>Distinct Customer Count</td>
+<td>Sales</td>
+<td>Customer ID</td>
+<td>Compte le nombre de clients uniques ayant effectué au moins une commande.</td>
+</tr>
+<tr>
+<td>General</td>
+<td>Sales Excluding North Region</td>
+<td>Sales</td>
+<td>Region</td>
+<td>Calcule le total des ventes de l'année en cours, en excluant toutes les transactions de la région 'North'.</td>
+</tr>
+<tr>
+<td>General</td>
+<td>Average Sales Per Customer</td>
+<td>Sheet1</td>
+<td>Customer ID</td>
+<td>Calcule le montant moyen des ventes par client en utilisant le [Total Sales] et la liste des clients.</td>
+</tr>
+</tbody>
+</table>
+<h2>6. Notes techniques</h2>
+<ul><li>Les requêtes Power Query pour les tables 'Customers' et 'SalesChannels' contiennent des chemins de fichiers en dur ('C:\data\Address.xlsx', 'C:\data\Channels.csv'). Ces chemins devront être mis à jour pour que le rafraîchissement des données fonctionne dans un autre environnement.</li><li>La cardinalité des relations entre les tables n'a pas été détectée.</li><li>Le modèle de données ne contient aucun visuel personnalisé.</li><li>Aucun filtre n'est appliqué au niveau du rapport.</li></ul>
+<h2>7. Annexe s&#233;mantique</h2>
+<table>
+<thead>
+<tr>
+<th>Dossier / Sous-Dossier</th>
+<th>Nom du Champ / Mesure</th>
+<th>Type de Format</th>
+<th>Visibilité</th>
+<th>Table Source</th>
+<th>Colonne Source</th>
+<th>Règle de Gestion / Formule &amp; Filtres</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Customers</td>
+<td>Customer ID</td>
+<td>TEXT</td>
+<td>Oui</td>
+<td>Sheet1</td>
+<td>Customer ID</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Customers</td>
+<td>Customer Name</td>
+<td>TEXT</td>
+<td>Oui</td>
+<td>Sheet1</td>
+<td>Customer Name</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Customers</td>
+<td>Segment</td>
+<td>TEXT</td>
+<td>Oui</td>
+<td>Sheet1</td>
+<td>Segment</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Customers</td>
+<td>Customer Adress</td>
+<td>TEXT</td>
+<td>Oui</td>
+<td>Sheet1</td>
+<td>Customer Adress</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Mesure\General</td>
+<td>Total Sales</td>
+<td>ENTIER</td>
+<td>Oui</td>
+<td>Sales</td>
+<td>Sales Amount</td>
+<td>SUM(Sales[Sales Amount])</td>
+</tr>
+<tr>
+<td>Mesure\General</td>
+<td>Selected Metric Value</td>
+<td>ENTIER</td>
+<td>Oui</td>
+<td>Sales</td>
+<td>Sales Amount</td>
+<td>SUM(Sales[Sales Amount])</td>
+</tr>
+<tr>
+<td>Mesure\General</td>
+<td>Previous Year Sales</td>
+<td>NUMERIQUE</td>
+<td>Oui</td>
+<td>Sales</td>
+<td>Order Date</td>
+<td>CALCULATE([Total Sales], SAMEPERIODLASTYEAR('Sales'[Order Date]))</td>
+</tr>
+<tr>
+<td>Mesure\General</td>
+<td>Sales Year Over Year Growth</td>
+<td>DECIMAL</td>
+<td>Oui</td>
+<td>non detecte</td>
+<td>non detectee</td>
+<td>DIVIDE([Total Sales] - [Previous Year Sales], [Previous Year Sales])</td>
+</tr>
+<tr>
+<td>Mesure\General</td>
+<td>Latest Year Sales</td>
+<td>ENTIER</td>
+<td>Oui</td>
+<td>Sales</td>
+<td>Sales Amount</td>
+<td>CALCULATE(<br>    SUM(Sales[Sales Amount]),<br>    Sales[Year] = CALCULATE(MAX(Sales[Year]), ALL(Sales))<br>)</td>
+</tr>
+<tr>
+<td>Mesure\General</td>
+<td>Current Year Sales</td>
+<td>NUMERIQUE</td>
+<td>Oui</td>
+<td>Sales</td>
+<td>Year</td>
+<td>CALCULATE([Total Sales], 'Sales'[Year] = MAX('Sales'[Year]))</td>
+</tr>
+<tr>
+<td>Mesure\General</td>
+<td>Average Margin</td>
+<td>DECIMAL</td>
+<td>Oui</td>
+<td>Sales</td>
+<td>Margin</td>
+<td>AVERAGE(Sales[Margin])</td>
+</tr>
+<tr>
+<td>Mesure\General</td>
+<td>Total Orders</td>
+<td>NUMERIQUE</td>
+<td>Oui</td>
+<td>Sales</td>
+<td>Order ID</td>
+<td>DISTINCTCOUNT(Sales[Order ID])</td>
+</tr>
+<tr>
+<td>Mesure\General</td>
+<td>Latest Month Sales</td>
+<td>NUMERIQUE</td>
+<td>Oui</td>
+<td>Sales</td>
+<td>Order Date</td>
+<td>VAR _LatestDate = CALCULATE(MAX(Sales[Order Date]), REMOVEFILTERS(Sales))<br>VAR _LatestYear = YEAR(_LatestDate)<br>VAR _LatestMonth = MONTH(_LatestDate)<br>RETURN<br>    CALCULATE(<br>        [Total Sales],<br>        KEEPFILTERS(Sales[Year] = _LatestYear),<br>        KEEPFILTERS(Sales[Month] = _LatestMonth)<br>    )</td>
+</tr>
+<tr>
+<td>Mesure\General</td>
+<td>Year To Date Sales</td>
+<td>NUMERIQUE</td>
+<td>Oui</td>
+<td>Sales</td>
+<td>Order Date</td>
+<td>TOTALYTD([Total Sales], 'Sales'[Order Date])</td>
+</tr>
+<tr>
+<td>Mesure\General</td>
+<td>Distinct Customer Count</td>
+<td>ENTIER</td>
+<td>Oui</td>
+<td>Sales</td>
+<td>Customer ID</td>
+<td>DISTINCTCOUNT(Sales[Customer ID])</td>
+</tr>
+<tr>
+<td>Mesure\General</td>
+<td>Sales Excluding North Region</td>
+<td>NUMERIQUE</td>
+<td>Oui</td>
+<td>Sales</td>
+<td>Region</td>
+<td>CALCULATE([Total Sales], 'Sales'[Region] &lt;&gt; "North", 'Sales'[Year] = MAX('Sales'[Year]))</td>
+</tr>
+<tr>
+<td>Mesure\General</td>
+<td>Average Sales Per Customer</td>
+<td>NUMERIQUE</td>
+<td>Oui</td>
+<td>Sheet1</td>
+<td>Customer ID</td>
+<td>AVERAGEX(VALUES(Customers[Customer ID]), [Total Sales])</td>
+</tr>
+<tr>
+<td>_Measures</td>
+<td>Placeholder</td>
+<td>TEXT</td>
+<td>Non</td>
+<td>Calculée (DAX)</td>
+<td>[Placeholder]</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Products</td>
+<td>Product ID</td>
+<td>TEXT</td>
+<td>Oui</td>
+<td>non detecte</td>
+<td>Product ID</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Products</td>
+<td>Product Name</td>
+<td>TEXT</td>
+<td>Oui</td>
+<td>non detecte</td>
+<td>Product Name</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Products</td>
+<td>Category</td>
+<td>TEXT</td>
+<td>Oui</td>
+<td>non detecte</td>
+<td>Category</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Products</td>
+<td>Product Groupe</td>
+<td>TEXT</td>
+<td>Oui</td>
+<td>non detecte</td>
+<td>Product Groupe</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Sales</td>
+<td>Order ID</td>
+<td>INT64</td>
+<td>Oui</td>
+<td>non detecte</td>
+<td>Order ID</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Sales</td>
+<td>Order Date</td>
+<td>TIMESTAMP</td>
+<td>Oui</td>
+<td>non detecte</td>
+<td>Order Date</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Sales</td>
+<td>Year</td>
+<td>INT64</td>
+<td>Oui</td>
+<td>non detecte</td>
+<td>Year</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Sales</td>
+<td>Month</td>
+<td>INT64</td>
+<td>Oui</td>
+<td>non detecte</td>
+<td>Month</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Sales</td>
+<td>Customer ID</td>
+<td>TEXT</td>
+<td>Oui</td>
+<td>non detecte</td>
+<td>Customer ID</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Sales</td>
+<td>Product ID</td>
+<td>TEXT</td>
+<td>Oui</td>
+<td>non detecte</td>
+<td>Product ID</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Sales</td>
+<td>Channel ID</td>
+<td>INT64</td>
+<td>Oui</td>
+<td>non detecte</td>
+<td>Channel ID</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Sales</td>
+<td>Region</td>
+<td>TEXT</td>
+<td>Oui</td>
+<td>non detecte</td>
+<td>Region</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Sales</td>
+<td>Sales Amount</td>
+<td>DECIMAL</td>
+<td>Oui</td>
+<td>non detecte</td>
+<td>Sales Amount</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Sales</td>
+<td>Quantity</td>
+<td>INT64</td>
+<td>Oui</td>
+<td>non detecte</td>
+<td>Quantity</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Sales</td>
+<td>Margin</td>
+<td>DECIMAL</td>
+<td>Oui</td>
+<td>non detecte</td>
+<td>Margin</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Sales by Product Dimension Selector</td>
+<td>Sales by Product Dimension Selector</td>
+<td>TEXT</td>
+<td>Oui</td>
+<td>Calculée (DAX)</td>
+<td>[Value1]</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Sales by Product Dimension Selector</td>
+<td>Sales by Product Dimension Selector Fields</td>
+<td>TEXT</td>
+<td>Non</td>
+<td>Calculée (DAX)</td>
+<td>[Value2]</td>
+<td>Copie</td>
+</tr>
+<tr>
+<td>Sales by Product Dimension Selector</td>
+<td>Sales by Product Dimension Selector Order</td>
+<td>INT64</td>
+<td>Non</td>
+<td>Calculée (DAX)</td>
+<td>[Value3]</td>
+<td>Copie</td>
+</tr>
+</tbody>
+</table>
+<h2>8. Mesures par visuel et par page</h2>
+<p><em>Données non disponibles pour ce format de rapport (format Fabric definition).</em></p>
+</body>
+</html>

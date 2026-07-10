@@ -1,0 +1,55 @@
+table Customers
+
+	column 'Customer ID'
+		dataType: string
+		sourceColumn: Customer ID
+		summarizeBy: none
+
+	column 'Customer Name'
+		dataType: string
+		sourceColumn: Customer Name
+		summarizeBy: none
+
+	column Segment
+		dataType: string
+		sourceColumn: Segment
+		summarizeBy: none
+
+	column 'Customer Adress'
+		dataType: string
+		sourceColumn: Customer Adress
+		summarizeBy: none
+
+	partition Customers = m
+		mode: import
+		source =
+			let
+			    BaseRows = Table.FromRows(
+			        {
+			            {"C1", "ABC Corp", "Enterprise"},
+			            {"C2", "XYZ Ltd", "SMB"},
+			            {"C3", "Delta Inc", "Enterprise"}
+			        },
+			        type table [CustomerID = text, CustomerName = text, Segment = text]
+			    ),
+			    // TODO: update file path to the actual location of Address.xlsx
+			    ExcelSource = Excel.Workbook(File.Contents("C:\data\Address.xlsx"), null, true),
+			    Sheet1 = ExcelSource{[Item="Sheet1", Kind="Sheet"]}[Data],
+			    PromotedHeaders = Table.PromoteHeaders(Sheet1, [PromoteAllScalars=true]),
+			    JoinedData = Table.NestedJoin(BaseRows, {"CustomerID"}, PromotedHeaders, {"CustomerID"}, "AddressData", JoinKind.LeftOuter),
+			    ExpandedAddress = Table.ExpandTableColumn(JoinedData, "AddressData", {"Customer Adress"}, {"Customer Adress"}),
+			    RenamedColumns = Table.RenameColumns(ExpandedAddress, {
+			        {"CustomerID", "Customer ID"},
+			        {"CustomerName", "Customer Name"}
+			    }),
+			    SelectedColumns = Table.SelectColumns(RenamedColumns, {"Customer ID", "Customer Name", "Segment", "Customer Adress"}),
+			    Output = Table.TransformColumnTypes(SelectedColumns, {
+			        {"Customer ID", type text},
+			        {"Customer Name", type text},
+			        {"Segment", type text},
+			        {"Customer Adress", type text}
+			    })
+			in
+			    Output
+
+	annotation PBI_ResultType = Table

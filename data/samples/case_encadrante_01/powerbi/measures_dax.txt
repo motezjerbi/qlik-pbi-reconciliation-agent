@@ -1,0 +1,62 @@
+# Mesure : Total Sales
+# Table source : Sales | Colonne source : Sales Amount
+SUM(Sales[Sales Amount])
+
+# Mesure : Selected Metric Value
+# Table source : Sales | Colonne source : Sales Amount
+SUM(Sales[Sales Amount])
+
+# Mesure : Previous Year Sales
+# Table source : Sales | Colonne source : Order Date
+CALCULATE([Total Sales], SAMEPERIODLASTYEAR('Sales'[Order Date]))
+
+# Mesure : Sales Year Over Year Growth
+# Table source : non detecte | Colonne source : non detectee
+DIVIDE([Total Sales] - [Previous Year Sales], [Previous Year Sales])
+
+# Mesure : Latest Year Sales
+# Table source : Sales | Colonne source : Sales Amount
+CALCULATE(
+    SUM(Sales[Sales Amount]),
+    Sales[Year] = CALCULATE(MAX(Sales[Year]), ALL(Sales))
+)
+
+# Mesure : Current Year Sales
+# Table source : Sales | Colonne source : Year
+CALCULATE([Total Sales], 'Sales'[Year] = MAX('Sales'[Year]))
+
+# Mesure : Average Margin
+# Table source : Sales | Colonne source : Margin
+AVERAGE(Sales[Margin])
+
+# Mesure : Total Orders
+# Table source : Sales | Colonne source : Order ID
+DISTINCTCOUNT(Sales[Order ID])
+
+# Mesure : Latest Month Sales
+# Table source : Sales | Colonne source : Order Date
+VAR _LatestDate = CALCULATE(MAX(Sales[Order Date]), REMOVEFILTERS(Sales))
+VAR _LatestYear = YEAR(_LatestDate)
+VAR _LatestMonth = MONTH(_LatestDate)
+RETURN
+    CALCULATE(
+        [Total Sales],
+        KEEPFILTERS(Sales[Year] = _LatestYear),
+        KEEPFILTERS(Sales[Month] = _LatestMonth)
+    )
+
+# Mesure : Year To Date Sales
+# Table source : Sales | Colonne source : Order Date
+TOTALYTD([Total Sales], 'Sales'[Order Date])
+
+# Mesure : Distinct Customer Count
+# Table source : Sales | Colonne source : Customer ID
+DISTINCTCOUNT(Sales[Customer ID])
+
+# Mesure : Sales Excluding North Region
+# Table source : Sales | Colonne source : Region
+CALCULATE([Total Sales], 'Sales'[Region] <> "North", 'Sales'[Year] = MAX('Sales'[Year]))
+
+# Mesure : Average Sales Per Customer
+# Table source : Sheet1 | Colonne source : Customer ID
+AVERAGEX(VALUES(Customers[Customer ID]), [Total Sales])

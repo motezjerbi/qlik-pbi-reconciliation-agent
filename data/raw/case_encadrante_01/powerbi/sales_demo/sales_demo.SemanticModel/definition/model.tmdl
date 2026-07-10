@@ -1,0 +1,19 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+	annotation PBI_QueryOrder = ["Customers", "Products", "Sales", "SalesChannels"]
+	annotation PBI_ProTooling = ["DevMode"]
+
+ref table Customers
+ref table _Measures
+ref table Products
+ref table Sales
+ref table SalesChannels
+ref table 'Sales by Product Dimension Selector'
+
+ref cultureInfo en-US

@@ -1,0 +1,477 @@
+{
+  "project_name": "sales_demo",
+  "generated_at": "2026-07-01 14:18:55",
+  "model_culture": "en-US",
+  "pages": [
+    {
+      "id": "jyex",
+      "display_name": "Advanced Analytics"
+    },
+    {
+      "id": "mddprh",
+      "display_name": "Executive Overview"
+    },
+    {
+      "id": "ygzmvds",
+      "display_name": "Advanced Metrics"
+    }
+  ],
+  "custom_visuals": [],
+  "report_filters_count": 0,
+  "tables": [
+    {
+      "name": "Customers",
+      "category": "Semantic",
+      "source_tables": [
+        "Sheet1"
+      ],
+      "source_query_m": "let\n    BaseRows = Table.FromRows(\n        {\n            {\"C1\", \"ABC Corp\", \"Enterprise\"},\n            {\"C2\", \"XYZ Ltd\", \"SMB\"},\n            {\"C3\", \"Delta Inc\", \"Enterprise\"}\n        },\n        type table [CustomerID = text, CustomerName = text, Segment = text]\n    ),\n    // TODO: update file path to the actual location of Address.xlsx\n    ExcelSource = Excel.Workbook(File.Contents(\"C:\\data\\Address.xlsx\"), null, true),\n    Sheet1 = ExcelSource{[Item=\"Sheet1\", Kind=\"Sheet\"]}[Data],\n    PromotedHeaders = Table.PromoteHeaders(Sheet1, [PromoteAllScalars=true]),\n    JoinedData = Table.NestedJoin(BaseRows, {\"CustomerID\"}, PromotedHeaders, {\"CustomerID\"}, \"AddressData\", JoinKind.LeftOuter),\n    ExpandedAddress = Table.ExpandTableColumn(JoinedData, \"AddressData\", {\"Customer Adress\"}, {\"Customer Adress\"}),\n    RenamedColumns = Table.RenameColumns(ExpandedAddress, {\n        {\"CustomerID\", \"Customer ID\"},\n        {\"CustomerName\", \"Customer Name\"}\n    }),\n    SelectedColumns = Table.SelectColumns(RenamedColumns, {\"Customer ID\", \"Customer Name\", \"Segment\", \"Customer Adress\"}),\n    Output = Table.TransformColumnTypes(SelectedColumns, {\n        {\"Customer ID\", type text},\n        {\"Customer Name\", type text},\n        {\"Segment\", type text},\n        {\"Customer Adress\", type text}\n    })\nin\n    Output",
+      "source_sql": "",
+      "columns": [
+        {
+          "name": "Customer ID",
+          "data_type": "string",
+          "format_string": "",
+          "visible": true,
+          "source_column": "Customer ID",
+          "expression": "",
+          "sql_source_table": "Sheet1",
+          "sql_source_column": "Customer ID"
+        },
+        {
+          "name": "Customer Name",
+          "data_type": "string",
+          "format_string": "",
+          "visible": true,
+          "source_column": "Customer Name",
+          "expression": "",
+          "sql_source_table": "Sheet1",
+          "sql_source_column": "Customer Name"
+        },
+        {
+          "name": "Segment",
+          "data_type": "string",
+          "format_string": "",
+          "visible": true,
+          "source_column": "Segment",
+          "expression": "",
+          "sql_source_table": "Sheet1",
+          "sql_source_column": "Segment"
+        },
+        {
+          "name": "Customer Adress",
+          "data_type": "string",
+          "format_string": "",
+          "visible": true,
+          "source_column": "Customer Adress",
+          "expression": "",
+          "sql_source_table": "Sheet1",
+          "sql_source_column": "Customer Adress"
+        }
+      ],
+      "measures": [],
+      "lineage_map": {}
+    },
+    {
+      "name": "_Measures",
+      "category": "Calculée (DAX)",
+      "source_tables": [],
+      "source_query_m": "DATATABLE(\"Placeholder\", STRING, {{\"\"}})",
+      "source_sql": "",
+      "columns": [
+        {
+          "name": "Placeholder",
+          "data_type": "string",
+          "format_string": "",
+          "visible": false,
+          "source_column": "[Placeholder]",
+          "expression": "",
+          "sql_source_table": "",
+          "sql_source_column": ""
+        }
+      ],
+      "measures": [
+        {
+          "name": "Total Sales",
+          "display_folder": "",
+          "expression": "SUM(Sales[Sales Amount])",
+          "visible": true,
+          "source_table": "Sales",
+          "source_column": "Sales Amount",
+          "sql_source_table": "",
+          "sql_source_column": "Sales Amount"
+        },
+        {
+          "name": "Selected Metric Value",
+          "display_folder": "",
+          "expression": "SUM(Sales[Sales Amount])",
+          "visible": true,
+          "source_table": "Sales",
+          "source_column": "Sales Amount",
+          "sql_source_table": "",
+          "sql_source_column": "Sales Amount"
+        },
+        {
+          "name": "Previous Year Sales",
+          "display_folder": "",
+          "expression": "CALCULATE([Total Sales], SAMEPERIODLASTYEAR('Sales'[Order Date]))",
+          "visible": true,
+          "source_table": "Sales",
+          "source_column": "Order Date",
+          "sql_source_table": "",
+          "sql_source_column": "Order Date"
+        },
+        {
+          "name": "Sales Year Over Year Growth",
+          "display_folder": "",
+          "expression": "DIVIDE([Total Sales] - [Previous Year Sales], [Previous Year Sales])",
+          "visible": true,
+          "source_table": "",
+          "source_column": "",
+          "sql_source_table": "",
+          "sql_source_column": ""
+        },
+        {
+          "name": "Latest Year Sales",
+          "display_folder": "",
+          "expression": "CALCULATE(\n    SUM(Sales[Sales Amount]),\n    Sales[Year] = CALCULATE(MAX(Sales[Year]), ALL(Sales))\n)",
+          "visible": true,
+          "source_table": "Sales",
+          "source_column": "Sales Amount",
+          "sql_source_table": "",
+          "sql_source_column": "Sales Amount"
+        },
+        {
+          "name": "Current Year Sales",
+          "display_folder": "",
+          "expression": "CALCULATE([Total Sales], 'Sales'[Year] = MAX('Sales'[Year]))",
+          "visible": true,
+          "source_table": "Sales",
+          "source_column": "Year",
+          "sql_source_table": "",
+          "sql_source_column": "Year"
+        },
+        {
+          "name": "Average Margin",
+          "display_folder": "",
+          "expression": "AVERAGE(Sales[Margin])",
+          "visible": true,
+          "source_table": "Sales",
+          "source_column": "Margin",
+          "sql_source_table": "",
+          "sql_source_column": "Margin"
+        },
+        {
+          "name": "Total Orders",
+          "display_folder": "",
+          "expression": "DISTINCTCOUNT(Sales[Order ID])",
+          "visible": true,
+          "source_table": "Sales",
+          "source_column": "Order ID",
+          "sql_source_table": "",
+          "sql_source_column": "Order ID"
+        },
+        {
+          "name": "Latest Month Sales",
+          "display_folder": "",
+          "expression": "VAR _LatestDate = CALCULATE(MAX(Sales[Order Date]), REMOVEFILTERS(Sales))\nVAR _LatestYear = YEAR(_LatestDate)\nVAR _LatestMonth = MONTH(_LatestDate)\nRETURN\n    CALCULATE(\n        [Total Sales],\n        KEEPFILTERS(Sales[Year] = _LatestYear),\n        KEEPFILTERS(Sales[Month] = _LatestMonth)\n    )",
+          "visible": true,
+          "source_table": "Sales",
+          "source_column": "Order Date",
+          "sql_source_table": "",
+          "sql_source_column": "Order Date"
+        },
+        {
+          "name": "Year To Date Sales",
+          "display_folder": "",
+          "expression": "TOTALYTD([Total Sales], 'Sales'[Order Date])",
+          "visible": true,
+          "source_table": "Sales",
+          "source_column": "Order Date",
+          "sql_source_table": "",
+          "sql_source_column": "Order Date"
+        },
+        {
+          "name": "Distinct Customer Count",
+          "display_folder": "",
+          "expression": "DISTINCTCOUNT(Sales[Customer ID])",
+          "visible": true,
+          "source_table": "Sales",
+          "source_column": "Customer ID",
+          "sql_source_table": "",
+          "sql_source_column": "Customer ID"
+        },
+        {
+          "name": "Sales Excluding North Region",
+          "display_folder": "",
+          "expression": "CALCULATE([Total Sales], 'Sales'[Region] <> \"North\", 'Sales'[Year] = MAX('Sales'[Year]))",
+          "visible": true,
+          "source_table": "Sales",
+          "source_column": "Region",
+          "sql_source_table": "",
+          "sql_source_column": "Region"
+        },
+        {
+          "name": "Average Sales Per Customer",
+          "display_folder": "",
+          "expression": "AVERAGEX(VALUES(Customers[Customer ID]), [Total Sales])",
+          "visible": true,
+          "source_table": "Customers",
+          "source_column": "Customer ID",
+          "sql_source_table": "Sheet1",
+          "sql_source_column": "Customer ID"
+        }
+      ],
+      "lineage_map": {}
+    },
+    {
+      "name": "Products",
+      "category": "Semantic",
+      "source_tables": [],
+      "source_query_m": "let\n    Source = Table.FromRows(\n        {\n            {\"P1\", \"Laptop\", \"Hardware\"},\n            {\"P2\", \"Mouse\", \"Accessories\"},\n            {\"P3\", \"Monitor\", \"Hardware\"}\n        },\n        type table [ProductID = text, ProductName = text, Category = text]\n    ),\n    ProductGroupMap = Table.FromRows(\n        {\n            {\"P1\", \"Hard\"},\n            {\"P2\", \"ACC\"}\n        },\n        type table [Key = text, GroupValue = text]\n    ),\n    JoinedWithGroup = Table.NestedJoin(Source, {\"ProductID\"}, ProductGroupMap, {\"Key\"}, \"MappedGroup\", JoinKind.LeftOuter),\n    ExpandedGroup = Table.ExpandTableColumn(JoinedWithGroup, \"MappedGroup\", {\"GroupValue\"}, {\"ProductGroupe\"}),\n    FilledNulls = Table.ReplaceValue(ExpandedGroup, null, \"N/A\", Replacer.ReplaceValue, {\"ProductGroupe\"}),\n    RenamedColumns = Table.RenameColumns(FilledNulls, {\n        {\"ProductID\", \"Product ID\"},\n        {\"ProductName\", \"Product Name\"},\n        {\"ProductGroupe\", \"Product Groupe\"}\n    }),\n    SelectedColumns = Table.SelectColumns(RenamedColumns, {\"Product ID\", \"Product Name\", \"Category\", \"Product Groupe\"}),\n    Output = Table.TransformColumnTypes(SelectedColumns, {\n        {\"Product ID\", type text},\n        {\"Product Name\", type text},\n        {\"Category\", type text},\n        {\"Product Groupe\", type text}\n    })\nin\n    Output",
+      "source_sql": "",
+      "columns": [
+        {
+          "name": "Product ID",
+          "data_type": "string",
+          "format_string": "",
+          "visible": true,
+          "source_column": "Product ID",
+          "expression": "",
+          "sql_source_table": "",
+          "sql_source_column": ""
+        },
+        {
+          "name": "Product Name",
+          "data_type": "string",
+          "format_string": "",
+          "visible": true,
+          "source_column": "Product Name",
+          "expression": "",
+          "sql_source_table": "",
+          "sql_source_column": ""
+        },
+        {
+          "name": "Category",
+          "data_type": "string",
+          "format_string": "",
+          "visible": true,
+          "source_column": "Category",
+          "expression": "",
+          "sql_source_table": "",
+          "sql_source_column": ""
+        },
+        {
+          "name": "Product Groupe",
+          "data_type": "string",
+          "format_string": "",
+          "visible": true,
+          "source_column": "Product Groupe",
+          "expression": "",
+          "sql_source_table": "",
+          "sql_source_column": ""
+        }
+      ],
+      "measures": [],
+      "lineage_map": {}
+    },
+    {
+      "name": "Sales",
+      "category": "Semantic",
+      "source_tables": [],
+      "source_query_m": "let\n    Source = Table.FromRows(\n        {\n            {\"1\", \"2025-01-10\", \"C1\", \"P1\", \"1\", \"North\", \"1200\", \"3\", \"200\"},\n            {\"2\", \"2025-01-15\", \"C2\", \"P2\", \"2\", \"South\", \"800\", \"2\", \"150\"},\n            {\"3\", \"2025-02-01\", \"C1\", \"P3\", \"3\", \"East\", \"1500\", \"5\", \"300\"},\n            {\"4\", \"2025-02-10\", \"C3\", \"P1\", \"1\", \"West\", \"600\", \"1\", \"100\"},\n            {\"5\", \"2024-01-15\", \"C1\", \"P1\", \"4\", \"North\", \"400\", \"2\", \"50\"},\n            {\"6\", \"2024-04-03\", \"C2\", \"P2\", \"2\", \"West\", \"350\", \"1\", \"25\"},\n            {\"7\", \"2024-02-11\", \"C4\", \"P3\", \"1\", \"East\", \"1000\", \"4\", \"500\"}\n        },\n        type table [OrderID = text, RawDate = text, CustomerID = text, ProductID = text, ChannelID = text, Region = text, SalesAmount = text, Quantity = text, Margin = text]\n    ),\n    RenamedDateColumn = Table.RenameColumns(Source, {{\"RawDate\", \"OrderDate\"}}),\n    ParsedDate = Table.TransformColumnTypes(RenamedDateColumn, {{\"OrderDate\", type date}}),\n    AddedYear = Table.AddColumn(ParsedDate, \"Year\", each Date.Year([OrderDate]), Int64.Type),\n    AddedMonth = Table.AddColumn(AddedYear, \"Month\", each Date.Month([OrderDate]), Int64.Type),\n    RenamedColumns = Table.RenameColumns(AddedMonth, {\n        {\"OrderID\", \"Order ID\"},\n        {\"OrderDate\", \"Order Date\"},\n        {\"CustomerID\", \"Customer ID\"},\n        {\"ProductID\", \"Product ID\"},\n        {\"ChannelID\", \"Channel ID\"},\n        {\"SalesAmount\", \"Sales Amount\"}\n    }),\n    SelectedColumns = Table.SelectColumns(RenamedColumns, {\"Order ID\", \"Order Date\", \"Year\", \"Month\", \"Customer ID\", \"Product ID\", \"Channel ID\", \"Region\", \"Sales Amount\", \"Quantity\", \"Margin\"}),\n    Output = Table.TransformColumnTypes(SelectedColumns, {\n        {\"Order ID\", Int64.Type},\n        {\"Order Date\", type datetime},\n        {\"Year\", Int64.Type},\n        {\"Month\", Int64.Type},\n        {\"Customer ID\", type text},\n        {\"Product ID\", type text},\n        {\"Channel ID\", Int64.Type},\n        {\"Region\", type text},\n        {\"Sales Amount\", type number},\n        {\"Quantity\", Int64.Type},\n        {\"Margin\", type number}\n    })\nin\n    Output",
+      "source_sql": "",
+      "columns": [
+        {
+          "name": "Order ID",
+          "data_type": "int64",
+          "format_string": "",
+          "visible": true,
+          "source_column": "Order ID",
+          "expression": "",
+          "sql_source_table": "",
+          "sql_source_column": ""
+        },
+        {
+          "name": "Order Date",
+          "data_type": "dateTime",
+          "format_string": "",
+          "visible": true,
+          "source_column": "Order Date",
+          "expression": "",
+          "sql_source_table": "",
+          "sql_source_column": ""
+        },
+        {
+          "name": "Year",
+          "data_type": "int64",
+          "format_string": "",
+          "visible": true,
+          "source_column": "Year",
+          "expression": "",
+          "sql_source_table": "",
+          "sql_source_column": ""
+        },
+        {
+          "name": "Month",
+          "data_type": "int64",
+          "format_string": "",
+          "visible": true,
+          "source_column": "Month",
+          "expression": "",
+          "sql_source_table": "",
+          "sql_source_column": ""
+        },
+        {
+          "name": "Customer ID",
+          "data_type": "string",
+          "format_string": "",
+          "visible": true,
+          "source_column": "Customer ID",
+          "expression": "",
+          "sql_source_table": "",
+          "sql_source_column": ""
+        },
+        {
+          "name": "Product ID",
+          "data_type": "string",
+          "format_string": "",
+          "visible": true,
+          "source_column": "Product ID",
+          "expression": "",
+          "sql_source_table": "",
+          "sql_source_column": ""
+        },
+        {
+          "name": "Channel ID",
+          "data_type": "int64",
+          "format_string": "",
+          "visible": true,
+          "source_column": "Channel ID",
+          "expression": "",
+          "sql_source_table": "",
+          "sql_source_column": ""
+        },
+        {
+          "name": "Region",
+          "data_type": "string",
+          "format_string": "",
+          "visible": true,
+          "source_column": "Region",
+          "expression": "",
+          "sql_source_table": "",
+          "sql_source_column": ""
+        },
+        {
+          "name": "Sales Amount",
+          "data_type": "decimal",
+          "format_string": "",
+          "visible": true,
+          "source_column": "Sales Amount",
+          "expression": "",
+          "sql_source_table": "",
+          "sql_source_column": ""
+        },
+        {
+          "name": "Quantity",
+          "data_type": "int64",
+          "format_string": "",
+          "visible": true,
+          "source_column": "Quantity",
+          "expression": "",
+          "sql_source_table": "",
+          "sql_source_column": ""
+        },
+        {
+          "name": "Margin",
+          "data_type": "decimal",
+          "format_string": "",
+          "visible": true,
+          "source_column": "Margin",
+          "expression": "",
+          "sql_source_table": "",
+          "sql_source_column": ""
+        }
+      ],
+      "measures": [],
+      "lineage_map": {}
+    },
+    {
+      "name": "SalesChannels",
+      "category": "Semantic",
+      "source_tables": [],
+      "source_query_m": "let\n    // TODO: update file path to the actual location of Channels.csv\n    Source = Csv.Document(File.Contents(\"C:\\data\\Channels.csv\"), [Delimiter=\",\", Columns=null, Encoding=1252, QuoteStyle=QuoteStyle.None]),\n    Output = Table.PromoteHeaders(Source, [PromoteAllScalars=true])\nin\n    Output",
+      "source_sql": "",
+      "columns": [],
+      "measures": [],
+      "lineage_map": {}
+    },
+    {
+      "name": "Sales by Product Dimension Selector",
+      "category": "Calculée (DAX)",
+      "source_tables": [],
+      "source_query_m": "{\n    (\"Product Name\", NAMEOF(Products[Product Name]), 0),\n    (\"ID_Product\", NAMEOF(Products[Product ID]), 1)\n}",
+      "source_sql": "",
+      "columns": [
+        {
+          "name": "Sales by Product Dimension Selector",
+          "data_type": "string",
+          "format_string": "",
+          "visible": true,
+          "source_column": "[Value1]",
+          "expression": "",
+          "sql_source_table": "",
+          "sql_source_column": ""
+        },
+        {
+          "name": "Sales by Product Dimension Selector Fields",
+          "data_type": "string",
+          "format_string": "",
+          "visible": false,
+          "source_column": "[Value2]",
+          "expression": "",
+          "sql_source_table": "",
+          "sql_source_column": ""
+        },
+        {
+          "name": "Sales by Product Dimension Selector Order",
+          "data_type": "int64",
+          "format_string": "0",
+          "visible": false,
+          "source_column": "[Value3]",
+          "expression": "",
+          "sql_source_table": "",
+          "sql_source_column": ""
+        }
+      ],
+      "measures": [],
+      "lineage_map": {}
+    }
+  ],
+  "relationships": [
+    {
+      "name": "Sales_Customer_ID_Customers_Customer_ID",
+      "from_table": "Sales",
+      "from_column": "Customer ID",
+      "to_table": "Customers",
+      "to_column": "Customer ID",
+      "cardinality": "non detectee"
+    },
+    {
+      "name": "Sales_Product_ID_Products_Product_ID",
+      "from_table": "Sales",
+      "from_column": "Product ID",
+      "to_table": "Products",
+      "to_column": "Product ID",
+      "cardinality": "non detectee"
+    }
+  ],
+  "visual_measures": [],
+  "counts": {
+    "tables": 6,
+    "columns": 23,
+    "measures": 13,
+    "relationships": 2,
+    "pages": 3
+  }
+}

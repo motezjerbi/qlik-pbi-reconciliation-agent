@@ -1,0 +1,67 @@
+table _Measures
+
+	column Placeholder
+		dataType: string
+		isHidden
+		isNameInferred
+		summarizeBy: none
+		sourceColumn: [Placeholder]
+
+	measure 'Total Sales' = SUM(Sales[Sales Amount])
+		formatString: $#,##0.00
+
+	measure 'Selected Metric Value' = SUM(Sales[Sales Amount])
+		formatString: #,##0.00
+
+	measure 'Previous Year Sales' = CALCULATE([Total Sales], SAMEPERIODLASTYEAR('Sales'[Order Date]))
+		formatString: $#,##0.00
+
+	measure 'Sales Year Over Year Growth' = DIVIDE([Total Sales] - [Previous Year Sales], [Previous Year Sales])
+		formatString: 0.0%
+
+	measure 'Latest Year Sales' =
+			CALCULATE(
+			    SUM(Sales[Sales Amount]),
+			    Sales[Year] = CALCULATE(MAX(Sales[Year]), ALL(Sales))
+			)
+		formatString: $#,##0.00
+
+	measure 'Current Year Sales' = CALCULATE([Total Sales], 'Sales'[Year] = MAX('Sales'[Year]))
+		formatString: $#,##0.00
+
+	measure 'Average Margin' = AVERAGE(Sales[Margin])
+		formatString: 0.00%
+
+	measure 'Total Orders' = DISTINCTCOUNT(Sales[Order ID])
+		formatString: #,##0
+
+	measure 'Latest Month Sales' =
+			VAR _LatestDate = CALCULATE(MAX(Sales[Order Date]), REMOVEFILTERS(Sales))
+			VAR _LatestYear = YEAR(_LatestDate)
+			VAR _LatestMonth = MONTH(_LatestDate)
+			RETURN
+			    CALCULATE(
+			        [Total Sales],
+			        KEEPFILTERS(Sales[Year] = _LatestYear),
+			        KEEPFILTERS(Sales[Month] = _LatestMonth)
+			    )
+		formatString: $#,##0.00
+
+	measure 'Year To Date Sales' = TOTALYTD([Total Sales], 'Sales'[Order Date])
+		formatString: $#,##0.00
+
+	measure 'Distinct Customer Count' = DISTINCTCOUNT(Sales[Customer ID])
+		formatString: #,##0
+
+	measure 'Sales Excluding North Region' = CALCULATE([Total Sales], 'Sales'[Region] <> "North", 'Sales'[Year] = MAX('Sales'[Year]))
+		formatString: $#,##0.00
+
+	measure 'Average Sales Per Customer' = AVERAGEX(VALUES(Customers[Customer ID]), [Total Sales])
+		formatString: $#,##0.00
+
+	partition _Measures = calculated
+		mode: import
+		source =
+			DATATABLE("Placeholder", STRING, {{""}})
+
+	annotation PBI_ResultType = Table

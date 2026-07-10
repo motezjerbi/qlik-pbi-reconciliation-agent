@@ -1,0 +1,74 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
+  "name": "slicer_for_fp_dimension_selector_XRvpz",
+  "position": {
+    "x": 0,
+    "y": 360,
+    "z": 1,
+    "height": 50,
+    "width": 640,
+    "tabOrder": 0
+  },
+  "visual": {
+    "visualType": "slicer",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Sales by Product Dimension Selector"
+                    }
+                  },
+                  "Property": "Sales by Product Dimension Selector"
+                }
+              },
+              "queryRef": "Sales by Product Dimension Selector.Sales by Product Dimension Selector",
+              "nativeQueryRef": "Sales by Product Dimension Selector"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Sales by Product Dimension Selector'"
+                }
+              }
+            },
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "objects": {
+      "data": [
+        {
+          "properties": {
+            "mode": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Item'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

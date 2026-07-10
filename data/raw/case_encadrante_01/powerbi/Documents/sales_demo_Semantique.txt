@@ -1,0 +1,48 @@
+Dossier / Sous-Dossier	Nom du Champ / Mesure	Type de Format	Visibilité	Table Source	Colonne Source	Règle de Gestion / Formule & Filtres
+Customers	Customer ID	TEXT	Oui	Sheet1	Customer ID	Copie
+Customers	Customer Name	TEXT	Oui	Sheet1	Customer Name	Copie
+Customers	Segment	TEXT	Oui	Sheet1	Segment	Copie
+Customers	Customer Adress	TEXT	Oui	Sheet1	Customer Adress	Copie
+Mesure\General	Total Sales	ENTIER	Oui	Sales	Sales Amount	SUM(Sales[Sales Amount])
+Mesure\General	Selected Metric Value	ENTIER	Oui	Sales	Sales Amount	SUM(Sales[Sales Amount])
+Mesure\General	Previous Year Sales	NUMERIQUE	Oui	Sales	Order Date	CALCULATE([Total Sales], SAMEPERIODLASTYEAR('Sales'[Order Date]))
+Mesure\General	Sales Year Over Year Growth	DECIMAL	Oui	non detecte	non detectee	DIVIDE([Total Sales] - [Previous Year Sales], [Previous Year Sales])
+Mesure\General	Latest Year Sales	ENTIER	Oui	Sales	Sales Amount	"CALCULATE(
+    SUM(Sales[Sales Amount]),
+    Sales[Year] = CALCULATE(MAX(Sales[Year]), ALL(Sales))
+)"
+Mesure\General	Current Year Sales	NUMERIQUE	Oui	Sales	Year	CALCULATE([Total Sales], 'Sales'[Year] = MAX('Sales'[Year]))
+Mesure\General	Average Margin	DECIMAL	Oui	Sales	Margin	AVERAGE(Sales[Margin])
+Mesure\General	Total Orders	NUMERIQUE	Oui	Sales	Order ID	DISTINCTCOUNT(Sales[Order ID])
+Mesure\General	Latest Month Sales	NUMERIQUE	Oui	Sales	Order Date	"VAR _LatestDate = CALCULATE(MAX(Sales[Order Date]), REMOVEFILTERS(Sales))
+VAR _LatestYear = YEAR(_LatestDate)
+VAR _LatestMonth = MONTH(_LatestDate)
+RETURN
+    CALCULATE(
+        [Total Sales],
+        KEEPFILTERS(Sales[Year] = _LatestYear),
+        KEEPFILTERS(Sales[Month] = _LatestMonth)
+    )"
+Mesure\General	Year To Date Sales	NUMERIQUE	Oui	Sales	Order Date	TOTALYTD([Total Sales], 'Sales'[Order Date])
+Mesure\General	Distinct Customer Count	ENTIER	Oui	Sales	Customer ID	DISTINCTCOUNT(Sales[Customer ID])
+Mesure\General	Sales Excluding North Region	NUMERIQUE	Oui	Sales	Region	"CALCULATE([Total Sales], 'Sales'[Region] <> ""North"", 'Sales'[Year] = MAX('Sales'[Year]))"
+Mesure\General	Average Sales Per Customer	NUMERIQUE	Oui	Sheet1	Customer ID	AVERAGEX(VALUES(Customers[Customer ID]), [Total Sales])
+_Measures	Placeholder	TEXT	Non	Calculée (DAX)	[Placeholder]	Copie
+Products	Product ID	TEXT	Oui	non detecte	Product ID	Copie
+Products	Product Name	TEXT	Oui	non detecte	Product Name	Copie
+Products	Category	TEXT	Oui	non detecte	Category	Copie
+Products	Product Groupe	TEXT	Oui	non detecte	Product Groupe	Copie
+Sales	Order ID	INT64	Oui	non detecte	Order ID	Copie
+Sales	Order Date	TIMESTAMP	Oui	non detecte	Order Date	Copie
+Sales	Year	INT64	Oui	non detecte	Year	Copie
+Sales	Month	INT64	Oui	non detecte	Month	Copie
+Sales	Customer ID	TEXT	Oui	non detecte	Customer ID	Copie
+Sales	Product ID	TEXT	Oui	non detecte	Product ID	Copie
+Sales	Channel ID	INT64	Oui	non detecte	Channel ID	Copie
+Sales	Region	TEXT	Oui	non detecte	Region	Copie
+Sales	Sales Amount	DECIMAL	Oui	non detecte	Sales Amount	Copie
+Sales	Quantity	INT64	Oui	non detecte	Quantity	Copie
+Sales	Margin	DECIMAL	Oui	non detecte	Margin	Copie
+Sales by Product Dimension Selector	Sales by Product Dimension Selector	TEXT	Oui	Calculée (DAX)	[Value1]	Copie
+Sales by Product Dimension Selector	Sales by Product Dimension Selector Fields	TEXT	Non	Calculée (DAX)	[Value2]	Copie
+Sales by Product Dimension Selector	Sales by Product Dimension Selector Order	INT64	Non	Calculée (DAX)	[Value3]	Copie
