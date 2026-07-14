@@ -1,10 +1,12 @@
 table 'Sales by Product Dimension Selector'
+	lineageTag: 1565d9ca-9308-4f5b-b975-4a1e7d1629e8
 
 	column 'Sales by Product Dimension Selector'
 		dataType: string
-		sortByColumn: 'Sales by Product Dimension Selector Order'
+		lineageTag: 20f0f5a4-89dc-48bd-9cc6-3ff8bde811b6
 		summarizeBy: none
 		sourceColumn: [Value1]
+		sortByColumn: 'Sales by Product Dimension Selector Order'
 
 		relatedColumnDetails
 			groupByColumn: 'Sales by Product Dimension Selector Fields'
@@ -12,6 +14,7 @@ table 'Sales by Product Dimension Selector'
 	column 'Sales by Product Dimension Selector Fields'
 		dataType: string
 		isHidden
+		lineageTag: cc813b7e-c4c9-47a5-a333-9badf40b586d
 		summarizeBy: none
 		sourceColumn: [Value2]
 
@@ -23,17 +26,19 @@ table 'Sales by Product Dimension Selector'
 
 	column 'Sales by Product Dimension Selector Order'
 		dataType: int64
-		formatString: 0
 		isHidden
+		formatString: 0
+		lineageTag: 7d844dd7-74a4-4452-8a53-cae076a7f03f
 		summarizeBy: none
 		sourceColumn: [Value3]
 
 	partition 'Sales by Product Dimension Selector' = calculated
 		mode: import
 		source =
-			{
-			    ("Product Name", NAMEOF(Products[Product Name]), 0),
-			    ("ID_Product", NAMEOF(Products[Product ID]), 1)
-			}
+				{
+				    ("Product Name", NAMEOF(Products[Product Name]), 0),
+				    ("ID_Product", NAMEOF(Products[Product ID]), 1)
+				}
 
 	annotation PBI_Id = Sales_by_Product_Dimension_Selector
+

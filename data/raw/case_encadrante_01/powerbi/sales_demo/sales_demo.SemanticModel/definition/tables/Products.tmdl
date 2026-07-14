@@ -1,60 +1,68 @@
 table Products
+	lineageTag: 489691cd-951c-416a-a975-3449cea0a6e6
 
 	column 'Product ID'
 		dataType: string
-		sourceColumn: Product ID
+		lineageTag: 85c852f5-fc0b-437c-9391-ecec1a20ff93
 		summarizeBy: none
+		sourceColumn: Product ID
 
 	column 'Product Name'
 		dataType: string
-		sourceColumn: Product Name
+		lineageTag: 947c6fb6-28af-4a1c-aed1-40cad6b2ce81
 		summarizeBy: none
+		sourceColumn: Product Name
 
 	column Category
 		dataType: string
-		sourceColumn: Category
+		lineageTag: bdb6d235-3b67-4b28-b806-d82512c7a434
 		summarizeBy: none
+		sourceColumn: Category
 
 	column 'Product Groupe'
 		dataType: string
-		sourceColumn: Product Groupe
+		lineageTag: 6579514b-6d7f-4405-93cc-65fff6b45622
 		summarizeBy: none
+		sourceColumn: Product Groupe
 
 	partition Products = m
 		mode: import
 		source =
-			let
-			    Source = Table.FromRows(
-			        {
-			            {"P1", "Laptop", "Hardware"},
-			            {"P2", "Mouse", "Accessories"},
-			            {"P3", "Monitor", "Hardware"}
-			        },
-			        type table [ProductID = text, ProductName = text, Category = text]
-			    ),
-			    ProductGroupMap = Table.FromRows(
-			        {
-			            {"P1", "Hard"},
-			            {"P2", "ACC"}
-			        },
-			        type table [Key = text, GroupValue = text]
-			    ),
-			    JoinedWithGroup = Table.NestedJoin(Source, {"ProductID"}, ProductGroupMap, {"Key"}, "MappedGroup", JoinKind.LeftOuter),
-			    ExpandedGroup = Table.ExpandTableColumn(JoinedWithGroup, "MappedGroup", {"GroupValue"}, {"ProductGroupe"}),
-			    FilledNulls = Table.ReplaceValue(ExpandedGroup, null, "N/A", Replacer.ReplaceValue, {"ProductGroupe"}),
-			    RenamedColumns = Table.RenameColumns(FilledNulls, {
-			        {"ProductID", "Product ID"},
-			        {"ProductName", "Product Name"},
-			        {"ProductGroupe", "Product Groupe"}
-			    }),
-			    SelectedColumns = Table.SelectColumns(RenamedColumns, {"Product ID", "Product Name", "Category", "Product Groupe"}),
-			    Output = Table.TransformColumnTypes(SelectedColumns, {
-			        {"Product ID", type text},
-			        {"Product Name", type text},
-			        {"Category", type text},
-			        {"Product Groupe", type text}
-			    })
-			in
-			    Output
+				let
+				    Source = Table.FromRows(
+				        {
+				            {"P1", "Laptop", "Hardware"},
+				            {"P2", "Mouse", "Accessories"},
+				            {"P3", "Monitor", "Hardware"}
+				        },
+				        type table [ProductID = text, ProductName = text, Category = text]
+				    ),
+				    ProductGroupMap = Table.FromRows(
+				        {
+				            {"P1", "Hard"},
+				            {"P2", "ACC"}
+				        },
+				        type table [Key = text, GroupValue = text]
+				    ),
+				    JoinedWithGroup = Table.NestedJoin(Source, {"ProductID"}, ProductGroupMap, {"Key"}, "MappedGroup", JoinKind.LeftOuter),
+				    ExpandedGroup = Table.ExpandTableColumn(JoinedWithGroup, "MappedGroup", {"GroupValue"}, {"ProductGroupe"}),
+				    FilledNulls = Table.ReplaceValue(ExpandedGroup, null, "N/A", Replacer.ReplaceValue, {"ProductGroupe"}),
+				    RenamedColumns = Table.RenameColumns(FilledNulls, {
+				        {"ProductID", "Product ID"},
+				        {"ProductName", "Product Name"},
+				        {"ProductGroupe", "Product Groupe"}
+				    }),
+				    SelectedColumns = Table.SelectColumns(RenamedColumns, {"Product ID", "Product Name", "Category", "Product Groupe"}),
+				    Output = Table.TransformColumnTypes(SelectedColumns, {
+				        {"Product ID", type text},
+				        {"Product Name", type text},
+				        {"Category", type text},
+				        {"Product Groupe", type text}
+				    })
+				in
+				    Output
 
 	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

@@ -27,7 +27,8 @@
                 }
               },
               "queryRef": "Products.Product Name",
-              "nativeQueryRef": "Product Name"
+              "nativeQueryRef": "Product Name",
+              "active": true
             }
           ]
         },

@@ -1,13 +1,25 @@
 table SalesChannels
+	lineageTag: bfe1c166-8ddd-4c2b-bfbc-fd384906449f
+
+	column ChannelID;ChannelName
+		dataType: string
+		lineageTag: 4d2b8f14-c7b6-42f5-93b0-f8e86ff9edb6
+		summarizeBy: none
+		sourceColumn: ChannelID;ChannelName
+
+		annotation SummarizationSetBy = Automatic
 
 	partition SalesChannels = m
 		mode: import
 		source =
-			let
-			    // TODO: update file path to the actual location of Channels.csv
-			    Source = Csv.Document(File.Contents("C:\data\Channels.csv"), [Delimiter=",", Columns=null, Encoding=1252, QuoteStyle=QuoteStyle.None]),
-			    Output = Table.PromoteHeaders(Source, [PromoteAllScalars=true])
-			in
-			    Output
+				let
+				    // TODO: update file path to the actual location of Channels.csv
+				    Source = Csv.Document(File.Contents("C:\Users\DELL\qlik-pbi-reconciliation-agent\data\raw\case_encadrante_01\powerbi_sources\Channels.csv"),[Delimiter=",", Encoding=1252, QuoteStyle=QuoteStyle.None]),
+				    Output = Table.PromoteHeaders(Source, [PromoteAllScalars=true])
+				in
+				    Output
 
 	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
+

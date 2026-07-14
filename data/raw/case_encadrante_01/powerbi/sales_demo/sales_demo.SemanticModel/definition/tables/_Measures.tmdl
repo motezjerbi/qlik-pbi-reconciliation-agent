@@ -1,23 +1,21 @@
 table _Measures
-
-	column Placeholder
-		dataType: string
-		isHidden
-		isNameInferred
-		summarizeBy: none
-		sourceColumn: [Placeholder]
+	lineageTag: 76e18312-3ac1-4d7c-a6e0-e78b68d5ab68
 
 	measure 'Total Sales' = SUM(Sales[Sales Amount])
 		formatString: $#,##0.00
+		lineageTag: f6cdeef7-70a3-4e23-a368-2b65d2534a01
 
 	measure 'Selected Metric Value' = SUM(Sales[Sales Amount])
 		formatString: #,##0.00
+		lineageTag: 98b639bb-539e-43ad-b714-53631eb17881
 
 	measure 'Previous Year Sales' = CALCULATE([Total Sales], SAMEPERIODLASTYEAR('Sales'[Order Date]))
 		formatString: $#,##0.00
+		lineageTag: fc728396-ebb0-41f4-9dbc-881a6da5e886
 
 	measure 'Sales Year Over Year Growth' = DIVIDE([Total Sales] - [Previous Year Sales], [Previous Year Sales])
 		formatString: 0.0%
+		lineageTag: 980106b3-ce62-4615-b4c9-b9b228cb1e2d
 
 	measure 'Latest Year Sales' =
 			CALCULATE(
@@ -25,15 +23,19 @@ table _Measures
 			    Sales[Year] = CALCULATE(MAX(Sales[Year]), ALL(Sales))
 			)
 		formatString: $#,##0.00
+		lineageTag: e8c3f64d-4f3b-432f-9c31-d020491ad22c
 
 	measure 'Current Year Sales' = CALCULATE([Total Sales], 'Sales'[Year] = MAX('Sales'[Year]))
 		formatString: $#,##0.00
+		lineageTag: 2f67ff84-ed4e-40a9-a48f-7fda5ab17baf
 
 	measure 'Average Margin' = AVERAGE(Sales[Margin])
 		formatString: 0.00%
+		lineageTag: a4360208-607f-41f4-ae91-e295eef7d60b
 
 	measure 'Total Orders' = DISTINCTCOUNT(Sales[Order ID])
 		formatString: #,##0
+		lineageTag: d10e098c-01fb-4904-b807-d696c60cb050
 
 	measure 'Latest Month Sales' =
 			VAR _LatestDate = CALCULATE(MAX(Sales[Order Date]), REMOVEFILTERS(Sales))
@@ -46,22 +48,35 @@ table _Measures
 			        KEEPFILTERS(Sales[Month] = _LatestMonth)
 			    )
 		formatString: $#,##0.00
+		lineageTag: 42e727b7-093a-4360-a7a2-d0d86d655146
 
 	measure 'Year To Date Sales' = TOTALYTD([Total Sales], 'Sales'[Order Date])
 		formatString: $#,##0.00
+		lineageTag: c74c3f93-c350-4487-96f9-4ed21bb8b526
 
 	measure 'Distinct Customer Count' = DISTINCTCOUNT(Sales[Customer ID])
 		formatString: #,##0
+		lineageTag: 771fbf13-cab1-45cb-963a-2e36c77ea721
 
 	measure 'Sales Excluding North Region' = CALCULATE([Total Sales], 'Sales'[Region] <> "North", 'Sales'[Year] = MAX('Sales'[Year]))
 		formatString: $#,##0.00
+		lineageTag: e46d54fe-a42b-4656-94c7-8cf82d1a31f4
 
 	measure 'Average Sales Per Customer' = AVERAGEX(VALUES(Customers[Customer ID]), [Total Sales])
 		formatString: $#,##0.00
+		lineageTag: a6954cda-5d09-4da6-82c7-f8024efa23be
+
+	column Placeholder
+		dataType: string
+		isHidden
+		lineageTag: 2f650dea-5273-4ec6-9845-3995aa32b739
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Placeholder]
 
 	partition _Measures = calculated
 		mode: import
-		source =
-			DATATABLE("Placeholder", STRING, {{""}})
+		source = DATATABLE("Placeholder", STRING, {{""}})
 
 	annotation PBI_ResultType = Table
+

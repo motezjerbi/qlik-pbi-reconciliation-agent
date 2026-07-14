@@ -5,3 +5,9 @@ relationship Sales_Customer_ID_Customers_Customer_ID
 relationship Sales_Product_ID_Products_Product_ID
 	fromColumn: Sales.'Product ID'
 	toColumn: Products.'Product ID'
+
+relationship 7df27eb9-9385-4239-a020-565d8a4a262b
+	joinOnDateBehavior: datePartOnly
+	fromColumn: Sales.'Order Date'
+	toColumn: LocalDateTable_ae601fd3-e47f-4e5c-8f41-a1abcb71f3bb.Date
+

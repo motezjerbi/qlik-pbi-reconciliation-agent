@@ -27,7 +27,8 @@
                 }
               },
               "queryRef": "Sales by Product Dimension Selector.Sales by Product Dimension Selector",
-              "nativeQueryRef": "Sales by Product Dimension Selector"
+              "nativeQueryRef": "Sales by Product Dimension Selector",
+              "active": true
             }
           ]
         },

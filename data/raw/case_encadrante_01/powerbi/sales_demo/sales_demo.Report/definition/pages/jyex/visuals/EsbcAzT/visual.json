@@ -55,5 +55,23 @@
         }
       ]
     }
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "4f5007b0cef7f78bf996",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Sales Year Over Year Growth"
+          }
+        },
+        "type": "Advanced"
+      }
+    ]
   }
 }

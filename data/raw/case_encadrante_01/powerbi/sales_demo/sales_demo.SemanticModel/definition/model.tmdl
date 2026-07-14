@@ -6,8 +6,11 @@ model Model
 		legacyRedirects
 		returnErrorValuesAsNull
 
-	annotation PBI_QueryOrder = ["Customers", "Products", "Sales", "SalesChannels"]
-	annotation PBI_ProTooling = ["DevMode"]
+annotation PBI_QueryOrder = ["Customers", "Products", "Sales", "SalesChannels"]
+
+annotation PBI_ProTooling = ["DevMode"]
+
+annotation __PBI_TimeIntelligenceEnabled = 1
 
 ref table Customers
 ref table _Measures
@@ -15,5 +18,8 @@ ref table Products
 ref table Sales
 ref table SalesChannels
 ref table 'Sales by Product Dimension Selector'
+ref table DateTableTemplate_f9f2359d-438e-4f52-9e3f-f92533af479d
+ref table LocalDateTable_ae601fd3-e47f-4e5c-8f41-a1abcb71f3bb
 
 ref cultureInfo en-US
+

@@ -27,7 +27,8 @@
                 }
               },
               "queryRef": "Sales.Region",
-              "nativeQueryRef": "Region"
+              "nativeQueryRef": "Region",
+              "active": true
             }
           ]
         },

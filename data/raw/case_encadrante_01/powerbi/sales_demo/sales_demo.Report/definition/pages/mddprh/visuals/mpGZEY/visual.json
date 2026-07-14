@@ -27,7 +27,8 @@
                 }
               },
               "queryRef": "Sales.Month",
-              "nativeQueryRef": "Month"
+              "nativeQueryRef": "Month",
+              "active": true
             }
           ]
         },
