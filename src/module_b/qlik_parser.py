@@ -1,7 +1,9 @@
 import re
 from pathlib import Path
-from taxonomy import TAXONOMY_PATTERNS
-
+try:
+    from taxonomy import TAXONOMY_PATTERNS
+except ImportError:
+    from module_b.taxonomy import TAXONOMY_PATTERNS
 
 def parse_qlik_script(filepath: str) -> list[dict]:
     content = Path(filepath).read_text(encoding="utf-8")
