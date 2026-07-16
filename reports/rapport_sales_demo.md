@@ -1,6 +1,6 @@
 # Rapport de réconciliation post-migration — sales_demo
 
-*Généré le 15/07/2026 à 00:41*
+*Généré le 16/07/2026 à 12:07*
 
 ## Résumé exécutif
 
