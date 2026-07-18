@@ -1,0 +1,40 @@
+# ============================================
+# Variables définies dans l'interface Qlik Sense
+# (PAS dans load_script.qvs - angle mort du parser actuel)
+# ============================================
+
+vCurrentYear = Year(Today())              # valeur actuelle : dynamique (2026 aujourd'hui)
+vMaxMonth    = month(max(Month))          # valeur actuelle : Jan
+vMaxYear     = max(Year)                  # valeur actuelle : 2025
+vMetric      = 'Sales'                    # valeur actuelle : Sales (variable texte, usage non identifié)
+
+# ============================================
+# Expressions des KPIs (feuille Executive Overview)
+# ============================================
+
+# KPI "Total Sales"
+Sum(SalesAmount)
+# Valeur affichée : 5.85k
+
+# KPI "Current Year Sales"
+Sum({<Year={$(=$(vCurrentYear))} >} SalesAmount)
+# Note : retourne 0 - vCurrentYear=2026 (Year(Today())), aucune donnée en 2026 (data va jusqu'à 2025)
+
+# ============================================
+# ⚠️ DÉCOUVERTE : 2 cartes KPI nommées IDENTIQUEMENT "Max Year Sales"
+# avec des formules différentes -> risque de confusion lors de la migration
+# ============================================
+
+# KPI "Max Year Sales" (variante 1) - filtre Année + Mois
+Sum({<Year={$(vMaxYear)},Month={$(vMaxMonth)} >} SalesAmount)
+# Valeur affichée : 2k (ventes du dernier mois de l'année max uniquement)
+# Équivalent DAX probable : "Latest Month Sales"
+
+# KPI "Max Year Sales" (variante 2) - filtre Année seule
+Sum({<Year={$(vMaxYear)} >} SalesAmount)
+# Valeur affichée : 4.1k (ventes de toute l'année max)
+# Équivalent DAX probable : "Latest Year Sales"
+
+# RISQUE IDENTIFIÉ : nom ambigu identique ("Max Year Sales") pour 2 mesures
+# différentes -> un consultant migrant ce rapport pourrait associer la mauvaise
+# formule DAX au mauvais visuel, ou halluciner qu'il s'agit d'un doublon à supprimer.

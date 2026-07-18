@@ -14,6 +14,7 @@ from orchestrator.prioritize import prioritize_all
 
 st.set_page_config(page_title="Agent de réconciliation Qlik → Power BI", layout="wide")
 st.title("🔍 Agent de réconciliation Qlik Sense → Power BI")
+st.markdown("*Détection automatique des écarts de données et des lacunes fonctionnelles post-migration*")
 
 # ============================================================
 # Fonctions utilitaires
@@ -208,6 +209,11 @@ with tab_report:
 
         findings = merge_findings(ecarts_a, mapping_b)
         prioritized = prioritize_all(findings)
+        st.session_state["findings"] = prioritized
+
+    # Affichage persistant du dernier rapport généré (survit au rerun du bouton de téléchargement)
+    if "findings" in st.session_state:
+        prioritized = st.session_state["findings"]
 
         nb_bloquant = sum(1 for f in prioritized if f["criticite"] == "BLOQUANT")
         nb_majeur = sum(1 for f in prioritized if f["criticite"] == "MAJEUR")
@@ -229,3 +235,18 @@ with tab_report:
                     st.write(f"**Module source :** {f['source_module']}")
                     st.write(f"**Détail :** {f['detail']}")
                     st.write(f"**Diagnostic :** {f['diagnostic']}")
+
+            st.divider()
+            rapport_texte = "\n\n".join(
+                f"## [{f['criticite']}] {f['libelle']}\n"
+                f"- **Module :** {f['source_module']}\n"
+                f"- **Détail :** {f['detail']}\n"
+                f"- **Diagnostic :** {f['diagnostic']}"
+                for f in prioritized
+            )
+            st.download_button(
+                "⬇️ Télécharger le rapport (Markdown)",
+                data=f"# Rapport de réconciliation — sales_demo\n\n{rapport_texte}",
+                file_name="rapport_reconciliation.md",
+                mime="text/markdown"
+            )
