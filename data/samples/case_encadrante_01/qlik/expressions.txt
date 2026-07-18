@@ -38,3 +38,18 @@ Sum({<Year={$(vMaxYear)} >} SalesAmount)
 # RISQUE IDENTIFIÉ : nom ambigu identique ("Max Year Sales") pour 2 mesures
 # différentes -> un consultant migrant ce rapport pourrait associer la mauvaise
 # formule DAX au mauvais visuel, ou halluciner qu'il s'agit d'un doublon à supprimer.
+
+
+# ÉCART MAJEUR CONFIRMÉ - Current Year Sales
+# Qlik : 0 (filtre sur Year(Today())=2026, aucune donnée réelle en 2026)
+# Power BI : $4,10K = 4100
+# Cause probable : la mesure DAX "Current Year Sales" = CALCULATE([Total Sales], Sales[Year]=MAX(Sales[Year]))
+# calcule en réalité la DERNIÈRE année de données (comme "Latest Year Sales"), PAS l'année calendaire réelle
+# -> Divergence de logique métier entre vCurrentYear (Qlik, = Year(Today())) et Current Year Sales (PBI, = MAX(Year))
+
+# VISUEL MANQUANT - Max Year Sales (variante Année seule, 4100 côté Qlik)
+# La mesure DAX "Latest Year Sales" existe dans le modèle mais n'est PAS affichée dans le rapport Power BI
+# -> Lacune de migration visuelle (mesure présente mais non exposée)
+
+# Petit écart - Max Year Sales (Année+Mois) / Latest Month Sales
+# Qlik : 2000 | Power BI : 2100 (écart de 100, à investiguer - arrondi ou donnée légèrement différente)
