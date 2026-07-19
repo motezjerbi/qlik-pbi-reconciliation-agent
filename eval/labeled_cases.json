@@ -1,0 +1,50 @@
+[
+  {
+    "pattern": "set_analysis",
+    "expression_source": "{<Year={$(=$(vCurrentYear))} >}",
+    "verite_terrain": "PARTIELLEMENT_COUVERT",
+    "justification_humaine": "Correspond à la mesure DAX 'Current Year Sales', mais celle-ci calcule en réalité MAX(Year) et non l'année calendaire réelle - divergence de logique confirmée par le Module A (écart 0 vs 4100)."
+  },
+  {
+    "pattern": "set_analysis",
+    "expression_source": "{<Year={$(vMaxYear)},Month={$(vMaxMonth)} >}",
+    "verite_terrain": "COUVERT",
+    "justification_humaine": "Correspond à 'Latest Month Sales', logique équivalente confirmée (2000 vs 2100, petit écart mineur mais bonne correspondance)."
+  },
+  {
+    "pattern": "set_analysis",
+    "expression_source": "{<Year={$(vMaxYear)} >}",
+    "verite_terrain": "NON_COUVERT",
+    "justification_humaine": "Aucun visuel Power BI n'affiche cette mesure dans le rapport (confirmé - visuel absent, voir Module A max_year_sales_2), même si la mesure DAX 'Latest Year Sales' existe dans le modèle sous-jacent."
+  },
+  {
+    "pattern": "mapping_applymap",
+    "expression_source": "ApplyMap(",
+    "verite_terrain": "COUVERT",
+    "justification_humaine": "Correspond à la colonne calculée 'Product Groupe' dans la table Products du modèle Power BI, confirmée dans la documentation."
+  },
+  {
+    "pattern": "subroutine_definition",
+    "expression_source": "SUB LoadFile(",
+    "verite_terrain": "PARTIELLEMENT_COUVERT",
+    "justification_humaine": "La logique de chargement paramétré n'a pas d'équivalent direct en DAX/Power Query générique - reproduite au cas par cas dans les requêtes Power Query (Customers, SalesChannels), donc partiellement équivalente mais pas industrialisée."
+  },
+  {
+    "pattern": "subroutine_call",
+    "expression_source": "CALL LoadFile(",
+    "verite_terrain": "PARTIELLEMENT_COUVERT",
+    "justification_humaine": "Même raisonnement que subroutine_definition - l'appel réutilise la logique de chargement générique, non reproduite comme telle en Power Query."
+  },
+  {
+    "pattern": "left_join",
+    "expression_source": "left join(",
+    "verite_terrain": "COUVERT",
+    "justification_humaine": "Correspond à la relation Sales-Customers visible dans le modèle sémantique Power BI (relationships.tmdl), migration de la jointure confirmée."
+  },
+  {
+    "pattern": "resident_group_by",
+    "expression_source": "Resident Sales Group By",
+    "verite_terrain": "COUVERT",
+    "justification_humaine": "Correspond à une logique d'agrégation standard, largement supportée nativement par DAX (SUMMARIZE/GROUPBY), pas de risque de perte de logique."
+  }
+]

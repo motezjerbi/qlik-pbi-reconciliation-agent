@@ -3,12 +3,14 @@ import re
 from pathlib import Path
 import pandas as pd
 import streamlit as st
+import json
 
 sys.path.append(str(Path(__file__).resolve().parent / "src"))
 from module_a.comparison import compare_exports
 from module_b.taxonomy import TAXONOMY_PATTERNS
 from module_b.qlik_parser import parse_qlik_script
 from module_b.mapping import map_all_patterns
+from module_b.mapping import map_pattern_to_dax as map_pattern_to_dax_eval
 from orchestrator.merge import merge_findings
 from orchestrator.prioritize import prioritize_all
 from llm.client import ask_claude
@@ -190,10 +192,11 @@ if "missing_pbi" not in st.session_state:
 # Onglets principaux
 # ============================================================
 
-tab_a, tab_b, tab_report = st.tabs([
+tab_a, tab_b, tab_report, tab_eval = st.tabs([
     "📊 Module A — Réconciliation de données",
     "🔍 Module B — Couverture fonctionnelle",
-    "📄 Rapport consolidé"
+    "📄 Rapport consolidé",
+    "🎯 Évaluation de l'agent"
 ])
 
 # ============================================================
@@ -490,3 +493,96 @@ with tab_report:
                 file_name="rapport_reconciliation_complet.md",
                 mime="text/markdown"
             )
+
+# ============================================================
+# TAB EVAL — Évaluation objective du Module B
+# ============================================================
+
+with tab_eval:
+    st.header("Évaluation de la fiabilité du mapping sémantique (Module B)")
+    st.caption("Compare le jugement de l'agent à une vérité terrain établie manuellement, "
+               "et mesure la stabilité du LLM en répétant chaque cas plusieurs fois.")
+
+    labeled_cases_path = Path("eval/labeled_cases.json")
+
+    if not labeled_cases_path.exists():
+        st.warning("Fichier eval/labeled_cases.json introuvable. Créez-le d'abord (voir documentation).")
+    else:
+        labeled_cases = json.loads(labeled_cases_path.read_text(encoding="utf-8"))
+        st.write(f"**{len(labeled_cases)} cas labellisés** disponibles pour l'évaluation.")
+
+        with st.expander("👁️ Voir les cas labellisés (vérité terrain)"):
+            for case in labeled_cases:
+                st.markdown(f"**{case['pattern']}** → `{case['expression_source']}`")
+                st.write(f"Vérité terrain : **{case['verite_terrain']}**")
+                st.caption(case["justification_humaine"])
+                st.divider()
+
+        n_runs = st.slider("Nombre d'exécutions par cas (mesure la stabilité)", 1, 5, 3)
+
+        dax_path = Path("data/samples/case_encadrante_01/powerbi/measures_dax.txt")
+
+        if not dax_path.exists():
+            st.warning("Fichier measures_dax.txt introuvable. Lancez d'abord pbi_parser.py ou le Module B.")
+        elif st.button("🎯 Lancer l'évaluation", type="primary"):
+            dax_text = dax_path.read_text(encoding="utf-8")
+
+            progress = st.progress(0)
+            status_text = st.empty()
+            results = []
+
+            total_calls = len(labeled_cases) * n_runs
+            call_count = 0
+
+            for case in labeled_cases:
+                pattern = {"pattern": case["pattern"], "expression_source": case["expression_source"]}
+                predictions = []
+
+                for run_idx in range(n_runs):
+                    status_text.text(f"Analyse : {case['pattern']} (run {run_idx + 1}/{n_runs})...")
+                    agent_result = map_pattern_to_dax_eval(pattern, dax_text)
+                    predictions.append(agent_result["statut"])
+                    call_count += 1
+                    progress.progress(call_count / total_calls)
+
+                most_common = max(set(predictions), key=predictions.count)
+                is_correct = most_common == case["verite_terrain"]
+                is_stable = len(set(predictions)) == 1
+
+                results.append({
+                    "pattern": case["pattern"],
+                    "expression": case["expression_source"],
+                    "verite_terrain": case["verite_terrain"],
+                    "predictions": predictions,
+                    "verdict_majoritaire": most_common,
+                    "correct": is_correct,
+                    "stable": is_stable
+                })
+
+            status_text.empty()
+            progress.empty()
+
+            accuracy = sum(1 for r in results if r["correct"]) / len(results)
+            stability = sum(1 for r in results if r["stable"]) / len(results)
+
+            st.session_state["eval_results"] = {"accuracy": accuracy, "stability": stability, "details": results}
+
+        if "eval_results" in st.session_state:
+            report = st.session_state["eval_results"]
+
+            st.divider()
+            col1, col2 = st.columns(2)
+            col1.metric("🎯 Précision (accuracy)", f"{report['accuracy']:.0%}")
+            col2.metric("🔄 Stabilité (cohérence)", f"{report['stability']:.0%}")
+
+            st.divider()
+            st.subheader("Détail par cas")
+
+            for r in report["details"]:
+                status_icon = "✅" if r["correct"] else "❌"
+                stable_icon = "🟢 stable" if r["stable"] else "🔴 instable"
+                with st.expander(f"{status_icon} {r['pattern']} — {stable_icon}"):
+                    st.write(f"**Expression :** `{r['expression']}`")
+                    st.write(f"**Attendu (vérité terrain) :** {r['verite_terrain']}")
+                    st.write(f"**Verdict majoritaire de l'agent :** {r['verdict_majoritaire']}")
+                    st.write(f"**Toutes les exécutions :** {r['predictions']}")
