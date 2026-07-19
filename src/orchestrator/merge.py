@@ -17,10 +17,11 @@ def merge_findings(ecarts_module_a: list[dict], mapping_module_b: list[dict]) ->
 
     for m in mapping_module_b:
         if m["statut"] != "COUVERT":
+            expr_clean = m["expression_source"].replace("\n", " ").strip()
             findings.append({
                 "source_module": "Module B - Audit de couverture fonctionnelle",
                 "type": f"LACUNE_{m['statut']}",
-                "libelle": f"{m['pattern']} ({m['expression_source']})",
+                "libelle": f"{m['pattern']} ({expr_clean})",
                 "detail": f"Mesure DAX correspondante : {m.get('mesure_dax_correspondante') or 'aucune trouvée'}",
                 "diagnostic": m.get("justification", ""),
                 "criticite": None

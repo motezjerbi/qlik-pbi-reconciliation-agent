@@ -11,6 +11,7 @@ from module_b.qlik_parser import parse_qlik_script
 from module_b.mapping import map_all_patterns
 from orchestrator.merge import merge_findings
 from orchestrator.prioritize import prioritize_all
+from llm.client import ask_claude
 
 st.set_page_config(page_title="Agent de réconciliation Qlik → Power BI", layout="wide")
 st.title("🔍 Agent de réconciliation Qlik Sense → Power BI")
@@ -150,6 +151,34 @@ def match_numeric_columns(qlik_cols: list[str], pbi_cols: list[str]) -> list[tup
             used_pbi.add(best_match)
 
     return pairs
+
+
+def generate_executive_summary(findings: list) -> str:
+    """Demande au LLM de rédiger un résumé exécutif à partir des findings structurés."""
+    if not findings:
+        return "Aucun problème détecté sur les éléments testés."
+
+    nb_bloquant = sum(1 for f in findings if f["criticite"] == "BLOQUANT")
+    nb_majeur = sum(1 for f in findings if f["criticite"] == "MAJEUR")
+    nb_mineur = sum(1 for f in findings if f["criticite"] == "MINEUR")
+
+    resume_findings = "\n".join(
+        f"- [{f['criticite']}] {f['source_module']} : {f['libelle']} — {f['detail']}"
+        for f in findings
+    )
+
+    prompt = f"""Tu es un consultant senior en migration Qlik Sense vers Power BI.
+Rédige un résumé exécutif court (5-6 phrases maximum) pour un rapport de réconciliation post-migration,
+à destination d'un consultant qui doit valider et corriger les problèmes.
+
+Statistiques : {nb_bloquant} problème(s) bloquant(s), {nb_majeur} majeur(s), {nb_mineur} mineur(s).
+
+Détail des findings :
+{resume_findings}
+
+Le résumé doit être factuel, professionnel, et donner une vue d'ensemble du niveau de risque de cette migration."""
+
+    return ask_claude(prompt)
 
 
 if "all_comparisons" not in st.session_state:
@@ -360,7 +389,10 @@ with tab_b:
                 }
                 for r in st.session_state["module_b_mapping"]:
                     icone = couleur_statut.get(r["statut"], "⚪")
-                    with st.expander(f"{icone} [{r['statut']}] {r['pattern']} → {r['expression_source'][:40]}"):
+                    expr_display = r["expression_source"].replace("\n", " ").strip()
+                    if len(expr_display) > 50:
+                        expr_display = expr_display[:50] + "..."
+                    with st.expander(f"{icone} [{r['statut']}] {r['pattern']} → {expr_display}"):
                         st.write(f"**Mesure DAX correspondante :** {r.get('mesure_dax_correspondante') or 'Aucune'}")
                         st.write(f"**Justification :** {r.get('justification')}")
         else:
@@ -413,6 +445,15 @@ with tab_report:
 
     if "findings" in st.session_state:
         prioritized = st.session_state["findings"]
+
+        # === RÉSUMÉ EXÉCUTIF LLM ===
+        if "executive_summary" not in st.session_state or st.button("🔄 Régénérer le résumé exécutif"):
+            with st.spinner("Rédaction du résumé exécutif par le LLM local..."):
+                st.session_state["executive_summary"] = generate_executive_summary(prioritized)
+
+        st.subheader("📝 Résumé exécutif")
+        st.info(st.session_state["executive_summary"])
+        st.divider()
 
         nb_bloquant = sum(1 for f in prioritized if f["criticite"] == "BLOQUANT")
         nb_majeur = sum(1 for f in prioritized if f["criticite"] == "MAJEUR")
