@@ -1,0 +1,13 @@
+# ANOMALIE MAJEURE - "Evolution Y vs Y-1" / "Sales Year Over Year Growth"
+# Qlik : 134.3%
+# Power BI : 317.9%
+# -> Écart significatif à confirmer par export, cause probable : logique de calcul différente
+#    entre les deux (mesure DAX "Sales Year Over Year Growth" déjà identifiée dans le modèle)
+
+# ANOMALIE MAJEURE - "Sales by channel"
+# Qlik : 4 canaux distincts affichés (Online, Partner, Agency, Direct)
+# Power BI : une seule barre visible sans étiquette de catégorie claire
+# -> Possible perte de granularité de dimension (Channel) lors de la migration, à investiguer
+
+# OBSERVATION - Sélecteur "Sales / Margin" présent côté Qlik (bouton toggle)
+# Non identifié dans la capture Power BI - à vérifier si un équivalent existe (slicer, etc.)
