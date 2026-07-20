@@ -31,24 +31,6 @@
             }
           ]
         },
-        "Values": {
-          "projections": [
-            {
-              "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
-                    }
-                  },
-                  "Property": "Total Sales"
-                }
-              },
-              "queryRef": "_Measures.Total Sales",
-              "nativeQueryRef": "Total Sales"
-            }
-          ]
-        },
         "Tooltips": {
           "projections": [
             {
@@ -64,6 +46,24 @@
               },
               "queryRef": "_Measures.Average Margin",
               "nativeQueryRef": "Average Margin"
+            }
+          ]
+        },
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Measures"
+                    }
+                  },
+                  "Property": "Total Sales"
+                }
+              },
+              "queryRef": "_Measures.Total Sales",
+              "nativeQueryRef": "Total Sales"
             }
           ]
         }
@@ -91,5 +91,51 @@
         }
       ]
     }
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "a54a8b32ad053c666543",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Products"
+              }
+            },
+            "Property": "Category"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "1760e2ba7c9cfc29bcf8",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Total Sales"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "cc018304288404889557",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Average Margin"
+          }
+        },
+        "type": "Advanced"
+      }
+    ]
   }
 }

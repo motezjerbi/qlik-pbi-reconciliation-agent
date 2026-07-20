@@ -1,0 +1,9 @@
+# LACUNE CONFIRMÉE - Graphique à bulles Product (sans titre)
+# Qlik : visuel présent avec données (Monitor/Laptop/Mouse, tailles différentes)
+# Power BI : visuel ABSENT de la page Advanced Metrics
+# -> Fonctionnalité de visualisation non migrée
+
+# LACUNE CONFIRMÉE - "Sales by Category 2026"
+# Qlik : visuel présent avec données (Accessories/Hardware)
+# Power BI : le visuel existe mais son export est VIDE (0 octet) - message "Les données dépassent la limite" à l'export
+# -> Fonctionnalité non exploitable / non migrée correctement

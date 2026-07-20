@@ -74,5 +74,37 @@
         }
       ]
     }
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "a45da27c909c7e1b975f",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Sales by Product Dimension Selector"
+              }
+            },
+            "Property": "Sales by Product Dimension Selector"
+          }
+        },
+        "type": "Categorical"
+      },
+      {
+        "name": "e293733213e42d289678",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Total Sales"
+          }
+        },
+        "type": "Advanced"
+      }
+    ]
   }
 }
