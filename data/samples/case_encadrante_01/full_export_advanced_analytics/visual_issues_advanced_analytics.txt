@@ -1,13 +1,22 @@
 # ANOMALIE MAJEURE - "Evolution Y vs Y-1" / "Sales Year Over Year Growth"
 # Qlik : 134.3%
 # Power BI : 317.9%
-# -> Écart significatif à confirmer par export, cause probable : logique de calcul différente
-#    entre les deux (mesure DAX "Sales Year Over Year Growth" déjà identifiée dans le modèle)
+# -> Écart significatif confirmé par le Module A (comparaison automatique : statut BLOQUANT).
+#    Cause probable : logique de calcul différente entre les deux systèmes
+#    (mesure DAX "Sales Year Over Year Growth" identifiée dans le modèle, formule à comparer
+#    précisément avec l'expression Qlik source pour déterminer l'origine exacte de l'écart).
 
-# ANOMALIE MAJEURE - "Sales by channel"
-# Qlik : 4 canaux distincts affichés (Online, Partner, Agency, Direct)
-# Power BI : une seule barre visible sans étiquette de catégorie claire
-# -> Possible perte de granularité de dimension (Channel) lors de la migration, à investiguer
+# ANOMALIE MAJEURE CONFIRMÉE - "Sales by channel"
+# Qlik : 4 canaux distincts avec valeurs propres (Online, Partner, Agency, Direct)
+# Power BI : l'export ne contient qu'UNE seule valeur agrégée globale ($5850,00 = Total Sales)
+# -> CONFIRMÉ : la dimension "Channel" a été perdue lors de la migration. Ce n'est pas un
+#    problème d'affichage mais une régression fonctionnelle réelle - le rapport Power BI
+#    ne permet plus d'analyser les ventes par canal. Aucune mesure ni dimension "Channel"
+#    exploitable n'est exposée dans ce visuel migré.
 
 # OBSERVATION - Sélecteur "Sales / Margin" présent côté Qlik (bouton toggle)
-# Non identifié dans la capture Power BI - à vérifier si un équivalent existe (slicer, etc.)
+# Qlik : bouton toggle permettant de basculer l'affichage entre Ventes et Marge
+# Power BI : non identifié dans la capture du visuel équivalent
+# -> À vérifier si un slicer ou un paramètre DAX équivalent existe dans le modèle
+#    (possible lien avec la table de paramètres "Sales by Product Dimension Selector"
+#    déjà identifiée dans la documentation technique du modèle Power BI).
