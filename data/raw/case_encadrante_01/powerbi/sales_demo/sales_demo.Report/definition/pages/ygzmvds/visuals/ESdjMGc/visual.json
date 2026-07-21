@@ -55,5 +55,23 @@
         }
       ]
     }
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "eb8002bd59b502399ca1",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Distinct Customer Count"
+          }
+        },
+        "type": "Advanced"
+      }
+    ]
   }
 }

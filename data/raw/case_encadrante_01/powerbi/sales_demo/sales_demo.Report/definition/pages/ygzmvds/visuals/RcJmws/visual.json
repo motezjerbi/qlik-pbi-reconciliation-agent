@@ -55,5 +55,23 @@
         }
       ]
     }
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "7363fa6f0996ea082ad3",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Sales Excluding North Region"
+          }
+        },
+        "type": "Advanced"
+      }
+    ]
   }
 }

@@ -1,0 +1,77 @@
+﻿# ============================================
+# Variables définies dans l'interface Qlik Sense
+# (PAS dans load_script.qvs - angle mort du parser actuel)
+# ============================================
+
+vCurrentYear = Year(Today())              # valeur actuelle : dynamique (2026 aujourd'hui)
+vMaxMonth    = month(max(Month))          # valeur actuelle : Jan
+vMaxYear     = max(Year)                  # valeur actuelle : 2025
+vMetric      = 'Sales'                    # valeur actuelle : Sales (variable texte, usage non identifié)
+
+# ============================================
+# Expressions des KPIs (feuille Executive Overview)
+# ============================================
+
+# KPI "Total Sales"
+Sum(SalesAmount)
+# Valeur affichée : 5.85k
+
+# KPI "Current Year Sales"
+Sum({<Year={$(=$(vCurrentYear))} >} SalesAmount)
+# Note : retourne 0 - vCurrentYear=2026 (Year(Today())), aucune donnée en 2026 (data va jusqu'à 2025)
+
+# ============================================
+# ⚠️ DÉCOUVERTE : 2 cartes KPI nommées IDENTIQUEMENT "Max Year Sales"
+# avec des formules différentes -> risque de confusion lors de la migration
+# ============================================
+
+# KPI "Max Year Sales" (variante 1) - filtre Année + Mois
+Sum({<Year={$(vMaxYear)},Month={$(vMaxMonth)} >} SalesAmount)
+# Valeur affichée : 2k (ventes du dernier mois de l'année max uniquement)
+# Équivalent DAX probable : "Latest Month Sales"
+
+# KPI "Max Year Sales" (variante 2) - filtre Année seule
+Sum({<Year={$(vMaxYear)} >} SalesAmount)
+# Valeur affichée : 4.1k (ventes de toute l'année max)
+# Équivalent DAX probable : "Latest Year Sales"
+
+# RISQUE IDENTIFIÉ : nom ambigu identique ("Max Year Sales") pour 2 mesures
+# différentes -> un consultant migrant ce rapport pourrait associer la mauvaise
+# formule DAX au mauvais visuel, ou halluciner qu'il s'agit d'un doublon à supprimer.
+
+
+# ÉCART MAJEUR CONFIRMÉ - Current Year Sales
+# Qlik : 0 (filtre sur Year(Today())=2026, aucune donnée réelle en 2026)
+# Power BI : $4,10K = 4100
+# Cause probable : la mesure DAX "Current Year Sales" = CALCULATE([Total Sales], Sales[Year]=MAX(Sales[Year]))
+# calcule en réalité la DERNIÈRE année de données (comme "Latest Year Sales"), PAS l'année calendaire réelle
+# -> Divergence de logique métier entre vCurrentYear (Qlik, = Year(Today())) et Current Year Sales (PBI, = MAX(Year))
+
+# VISUEL MANQUANT - Max Year Sales (variante Année seule, 4100 côté Qlik)
+# La mesure DAX "Latest Year Sales" existe dans le modèle mais n'est PAS affichée dans le rapport Power BI
+# -> Lacune de migration visuelle (mesure présente mais non exposée)
+
+# Petit écart - Max Year Sales (Année+Mois) / Latest Month Sales
+# Qlik : 2000 | Power BI : 2100 (écart de 100, à investiguer - arrondi ou donnée légèrement différente)
+# LACUNE CONFIRMÉE - Graphique à bulles Product (sans titre)
+# Qlik : visuel présent avec données (Monitor/Laptop/Mouse, tailles différentes)
+# Power BI : visuel ABSENT de la page Advanced Metrics
+# -> Fonctionnalité de visualisation non migrée
+
+# LACUNE CONFIRMÉE - "Sales by Category 2026"
+# Qlik : visuel présent avec données (Accessories/Hardware)
+# Power BI : le visuel existe mais son export est VIDE (0 octet) - message "Les données dépassent la limite" à l'export
+# -> Fonctionnalité non exploitable / non migrée correctement
+# ANOMALIE MAJEURE - "Evolution Y vs Y-1" / "Sales Year Over Year Growth"
+# Qlik : 134.3%
+# Power BI : 317.9%
+# -> Écart significatif à confirmer par export, cause probable : logique de calcul différente
+#    entre les deux (mesure DAX "Sales Year Over Year Growth" déjà identifiée dans le modèle)
+
+# ANOMALIE MAJEURE - "Sales by channel"
+# Qlik : 4 canaux distincts affichés (Online, Partner, Agency, Direct)
+# Power BI : une seule barre visible sans étiquette de catégorie claire
+# -> Possible perte de granularité de dimension (Channel) lors de la migration, à investiguer
+
+# OBSERVATION - Sélecteur "Sales / Margin" présent côté Qlik (bouton toggle)
+# Non identifié dans la capture Power BI - à vérifier si un équivalent existe (slicer, etc.)

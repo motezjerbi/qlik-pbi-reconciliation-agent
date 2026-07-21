@@ -55,5 +55,23 @@
         }
       ]
     }
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "83f207730ad6e3ebe8b6",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Year To Date Sales"
+          }
+        },
+        "type": "Advanced"
+      }
+    ]
   }
 }

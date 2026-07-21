@@ -112,7 +112,7 @@ LOAD
 Resident Sales
 Group By CustomerID;
 
-# ============================================
+﻿# ============================================
 # Variables définies dans l'interface Qlik Sense
 # (PAS dans load_script.qvs - angle mort du parser actuel)
 # ============================================
@@ -166,4 +166,26 @@ Sum({<Year={$(vMaxYear)} >} SalesAmount)
 # -> Lacune de migration visuelle (mesure présente mais non exposée)
 
 # Petit écart - Max Year Sales (Année+Mois) / Latest Month Sales
-# Qlik : 2000 | Power BI : 2100 (écart de 100, à investiguer - arrondi ou donnée légèrement différente)
+# Qlik : 2000 | Power BI : 2100 (écart de 100, à investiguer - arrondi ou donnée légèrement différente)
+# LACUNE CONFIRMÉE - Graphique à bulles Product (sans titre)
+# Qlik : visuel présent avec données (Monitor/Laptop/Mouse, tailles différentes)
+# Power BI : visuel ABSENT de la page Advanced Metrics
+# -> Fonctionnalité de visualisation non migrée
+
+# LACUNE CONFIRMÉE - "Sales by Category 2026"
+# Qlik : visuel présent avec données (Accessories/Hardware)
+# Power BI : le visuel existe mais son export est VIDE (0 octet) - message "Les données dépassent la limite" à l'export
+# -> Fonctionnalité non exploitable / non migrée correctement
+# ANOMALIE MAJEURE - "Evolution Y vs Y-1" / "Sales Year Over Year Growth"
+# Qlik : 134.3%
+# Power BI : 317.9%
+# -> Écart significatif à confirmer par export, cause probable : logique de calcul différente
+#    entre les deux (mesure DAX "Sales Year Over Year Growth" déjà identifiée dans le modèle)
+
+# ANOMALIE MAJEURE - "Sales by channel"
+# Qlik : 4 canaux distincts affichés (Online, Partner, Agency, Direct)
+# Power BI : une seule barre visible sans étiquette de catégorie claire
+# -> Possible perte de granularité de dimension (Channel) lors de la migration, à investiguer
+
+# OBSERVATION - Sélecteur "Sales / Margin" présent côté Qlik (bouton toggle)
+# Non identifié dans la capture Power BI - à vérifier si un équivalent existe (slicer, etc.)

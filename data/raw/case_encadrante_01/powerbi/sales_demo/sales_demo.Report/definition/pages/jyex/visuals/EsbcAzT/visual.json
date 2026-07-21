@@ -2,10 +2,10 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.10.0/schema.json",
   "name": "EsbcAzT",
   "position": {
-    "x": 794,
-    "y": 58,
+    "x": 708.57142857142867,
+    "y": 20,
     "z": 1,
-    "height": 58,
+    "height": 101.42857142857143,
     "width": 320,
     "tabOrder": 0
   },
