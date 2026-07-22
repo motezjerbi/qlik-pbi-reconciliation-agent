@@ -502,6 +502,9 @@ if "all_comparisons" not in st.session_state:
 if "missing_pbi" not in st.session_state:
     st.session_state["missing_pbi"] = []
 
+if "comparison_failures" not in st.session_state:
+    st.session_state["comparison_failures"] = []
+
 # ============================================================
 # ONGLETS
 # ============================================================
@@ -543,6 +546,7 @@ with tab_a:
         if st.button("🚀 Lancer les comparaisons", type="primary"):
             st.session_state["all_comparisons"] = {}
             st.session_state["missing_pbi"] = []
+            st.session_state["comparison_failures"] = []
 
             for base_name in all_base_names:
                 qlik_f = qlik_map.get(base_name)
@@ -596,6 +600,12 @@ with tab_a:
 
                             if not matched_pairs or key_col_qlik is None or key_col_pbi is None:
                                 st.warning("⚠️ Impossible d'associer les colonnes.")
+                                st.session_state["comparison_failures"].append({
+                                    "visuel": base_name,
+                                    "raison": f"Structure incompatible — colonnes Qlik: {list(qlik_df.columns)}, "
+                                              f"colonnes Power BI: {list(pbi_df.columns)}. "
+                                              f"Aucune correspondance de dimension/mesure fiable détectée automatiquement."
+                                })
                                 continue
 
                             for qcol, pcol in matched_pairs:
@@ -631,9 +641,16 @@ with tab_a:
         if st.session_state["missing_pbi"]:
             st.warning(f"🔴 Visuels sans équivalent PBI: {', '.join(st.session_state['missing_pbi'])}")
 
+        if st.session_state["comparison_failures"]:
+            st.error(f"⚠️ {len(st.session_state['comparison_failures'])} comparaison(s) échouée(s) — nécessite une vérification manuelle")
+            for cf in st.session_state["comparison_failures"]:
+                with st.expander(f"❌ {cf['visuel']}"):
+                    st.write(cf["raison"])
+
         if st.button("🗑️ Effacer tout"):
             st.session_state["all_comparisons"] = {}
             st.session_state["missing_pbi"] = []
+            st.session_state["comparison_failures"] = []
             st.rerun()
 
         for nom, result in st.session_state["all_comparisons"].items():
@@ -743,6 +760,15 @@ with tab_report:
                 "valeur_pbi": "absent",
                 "ecart_relatif": 100.0,
                 "diagnostic": f"Visuel '{nom}' absent dans PBI"
+            })
+
+        for cf in st.session_state["comparison_failures"]:
+            ecarts_a.append({
+                "produit": cf["visuel"],
+                "valeur_qlik": "structure incompatible",
+                "valeur_pbi": "structure incompatible",
+                "ecart_relatif": 50.0,
+                "diagnostic": f"Comparaison automatique échouée — {cf['raison']} Vérification manuelle requise."
             })
 
         mapping_b = st.session_state.get("module_b_mapping", [])
