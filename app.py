@@ -15,6 +15,7 @@ from module_b.mapping import map_pattern_to_dax as map_pattern_to_dax_eval
 from orchestrator.merge import merge_findings
 from orchestrator.prioritize import prioritize_all
 from llm.client import ask_claude
+from graph.build_graph import build_reconciliation_graph
 
 st.set_page_config(
     page_title="Migration Audit — Qlik → Power BI",
@@ -741,40 +742,22 @@ with tab_report:
 
     if st.button("📄 Générer le rapport d'audit", type="primary",
                  disabled=(nb_comparisons == 0 and nb_missing == 0 and not has_b)):
-        ecarts_a = []
 
-        for nom, result in st.session_state["all_comparisons"].items():
-            for _, row in result[result["statut"] == "ECART_DETECTE"].iterrows():
-                ecarts_a.append({
-                    "produit": f"{nom} — {row['__key__']}",
-                    "valeur_qlik": row["__value___qlik"],
-                    "valeur_pbi": row["__value___pbi"],
-                    "ecart_relatif": row["ecart_relatif"] * 100,
-                    "diagnostic": f"Écart sur '{nom}'"
-                })
+        with st.spinner("Exécution du graphe multi-agents (Module A → Module B → Orchestrateur)..."):
+            graph_app = build_reconciliation_graph()
 
-        for nom in st.session_state["missing_pbi"]:
-            ecarts_a.append({
-                "produit": nom,
-                "valeur_qlik": "présent",
-                "valeur_pbi": "absent",
-                "ecart_relatif": 100.0,
-                "diagnostic": f"Visuel '{nom}' absent dans PBI"
-            })
+            initial_state = {
+                "all_comparisons": st.session_state["all_comparisons"],
+                "missing_pbi": st.session_state["missing_pbi"],
+                "comparison_failures": st.session_state.get("comparison_failures", []),
+                "qlik_patterns": [],
+                "mapping_results": st.session_state.get("module_b_mapping", []),
+                "dax_measures_path": "",
+            }
 
-        for cf in st.session_state["comparison_failures"]:
-            ecarts_a.append({
-                "produit": cf["visuel"],
-                "valeur_qlik": "structure incompatible",
-                "valeur_pbi": "structure incompatible",
-                "ecart_relatif": 50.0,
-                "diagnostic": f"Comparaison automatique échouée — {cf['raison']} Vérification manuelle requise."
-            })
+            result_state = graph_app.invoke(initial_state)
 
-        mapping_b = st.session_state.get("module_b_mapping", [])
-        findings = merge_findings(ecarts_a, mapping_b)
-        prioritized = prioritize_all(findings)
-        st.session_state["findings"] = prioritized
+        st.session_state["findings"] = result_state["findings"]
 
     if "findings" in st.session_state:
         prioritized = st.session_state["findings"]
