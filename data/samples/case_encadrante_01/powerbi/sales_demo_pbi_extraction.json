@@ -1,0 +1,372 @@
+{
+  "metadata": {
+    "source": "pbix_live_adomd_with_zip_pages",
+    "file": "sales_demo.pbix",
+    "type": "Power BI Report (fusion live + ZIP)",
+    "tables_count": 7,
+    "dax_measures_count": 13,
+    "visuals_count": 23,
+    "kpis_count": 13,
+    "pages_count": 3,
+    "columns_count": 0,
+    "tables_data_count": 0
+  },
+  "pages": [
+    {
+      "name": "Advanced Analytics",
+      "id": "jyex"
+    },
+    {
+      "name": "Executive Overview",
+      "id": "mddprh"
+    },
+    {
+      "name": "Advanced Metrics",
+      "id": "ygzmvds"
+    }
+  ],
+  "kpis": [
+    {
+      "name": "Total Sales",
+      "value": 5850.0,
+      "expression": "SUM(Sales[Sales Amount])"
+    },
+    {
+      "name": "Selected Metric Value",
+      "value": 5850.0,
+      "expression": "SUM(Sales[Sales Amount])"
+    },
+    {
+      "name": "Previous Year Sales",
+      "value": 1400.0,
+      "expression": "CALCULATE([Total Sales], SAMEPERIODLASTYEAR('Sales'[Order Date]))"
+    },
+    {
+      "name": "Sales Year Over Year Growth",
+      "value": 3.1785714285714284,
+      "expression": "DIVIDE([Total Sales] - [Previous Year Sales], [Previous Year Sales])"
+    },
+    {
+      "name": "Latest Year Sales",
+      "value": null,
+      "expression": "CALCULATE(\n    SUM(Sales[Sales Amount]),\n    Sales[Year] = CALCULATE(MAX(Sales[Year]), ALL(Sales))\n)"
+    },
+    {
+      "name": "Current Year Sales",
+      "value": 4100.0,
+      "expression": "CALCULATE([Total Sales], 'Sales'[Year] = MAX('Sales'[Year]))"
+    },
+    {
+      "name": "Average Margin",
+      "value": 189.28571428571428,
+      "expression": "AVERAGE(Sales[Margin])"
+    },
+    {
+      "name": "Total Orders",
+      "value": 7,
+      "expression": "DISTINCTCOUNT(Sales[Order ID])"
+    },
+    {
+      "name": "Latest Month Sales",
+      "value": 2100.0,
+      "expression": "VAR _LatestDate = CALCULATE(MAX(Sales[Order Date]), REMOVEFILTERS(Sales))\nVAR _LatestYear = YEAR(_LatestDate)\nVAR _LatestMonth = MONTH(_LatestDate)\nRETURN\n    CALCULATE(\n        [Total Sales],\n        KEEPFILTERS(Sales[Year] = _LatestYear),\n        KEEPFILTERS(Sales[Month] = _LatestMonth)\n    )"
+    },
+    {
+      "name": "Year To Date Sales",
+      "value": 4100.0,
+      "expression": "TOTALYTD([Total Sales], 'Sales'[Order Date])"
+    },
+    {
+      "name": "Distinct Customer Count",
+      "value": 4,
+      "expression": "DISTINCTCOUNT(Sales[Customer ID])"
+    },
+    {
+      "name": "Sales Excluding North Region",
+      "value": 2900.0,
+      "expression": "CALCULATE([Total Sales], 'Sales'[Region] <> \"North\", 'Sales'[Year] = MAX('Sales'[Year]))"
+    },
+    {
+      "name": "Average Sales Per Customer",
+      "value": 1462.5,
+      "expression": "AVERAGEX(VALUES(Customers[Customer ID]), [Total Sales])"
+    }
+  ],
+  "visuals": [
+    {
+      "name": "EsbcAzT",
+      "id": "EsbcAzT",
+      "type": "card",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "PAMjnV",
+      "id": "PAMjnV",
+      "type": "clusteredColumnChart",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "qrEMJ",
+      "id": "qrEMJ",
+      "type": "clusteredColumnChart",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "dTQJ",
+      "id": "dTQJ",
+      "type": "card",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "HSDwJeV",
+      "id": "HSDwJeV",
+      "type": "card",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "HZejzW",
+      "id": "HZejzW",
+      "type": "tableEx",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "LfPAmB",
+      "id": "LfPAmB",
+      "type": "card",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "mAk",
+      "id": "mAk",
+      "type": "card",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "mpGZEY",
+      "id": "mpGZEY",
+      "type": "lineChart",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "mPSaEm",
+      "id": "mPSaEm",
+      "type": "clusteredColumnChart",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "AcFzzN",
+      "id": "AcFzzN",
+      "type": "clusteredColumnChart",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "BFrxVB",
+      "id": "BFrxVB",
+      "type": "textbox",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "ESdjMGc",
+      "id": "ESdjMGc",
+      "type": "card",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "JqmHry",
+      "id": "JqmHry",
+      "type": "card",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "mmrZJr",
+      "id": "mmrZJr",
+      "type": "pieChart",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "nGPLCJ",
+      "id": "nGPLCJ",
+      "type": "card",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "PGpPe_slicer_1",
+      "id": "PGpPe_slicer_1",
+      "type": "slicer",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "PGpPe_slicer_2",
+      "id": "PGpPe_slicer_2",
+      "type": "slicer",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "PGpPe_slicer_3",
+      "id": "PGpPe_slicer_3",
+      "type": "slicer",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "RcJmws",
+      "id": "RcJmws",
+      "type": "card",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "slicer_for_fp_dimension_selector_XRvpz",
+      "id": "slicer_for_fp_dimension_selector_XRvpz",
+      "type": "slicer",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "t",
+      "id": "t",
+      "type": "card",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    },
+    {
+      "name": "XRvpz",
+      "id": "XRvpz",
+      "type": "clusteredColumnChart",
+      "page": "visuals",
+      "measures_used": [],
+      "value": null
+    }
+  ],
+  "dax_measures": [
+    {
+      "name": "Total Sales",
+      "dax": "SUM(Sales[Sales Amount])"
+    },
+    {
+      "name": "Selected Metric Value",
+      "dax": "SUM(Sales[Sales Amount])"
+    },
+    {
+      "name": "Previous Year Sales",
+      "dax": "CALCULATE([Total Sales], SAMEPERIODLASTYEAR('Sales'[Order Date]))"
+    },
+    {
+      "name": "Sales Year Over Year Growth",
+      "dax": "DIVIDE([Total Sales] - [Previous Year Sales], [Previous Year Sales])"
+    },
+    {
+      "name": "Latest Year Sales",
+      "dax": "CALCULATE(\n    SUM(Sales[Sales Amount]),\n    Sales[Year] = CALCULATE(MAX(Sales[Year]), ALL(Sales))\n)"
+    },
+    {
+      "name": "Current Year Sales",
+      "dax": "CALCULATE([Total Sales], 'Sales'[Year] = MAX('Sales'[Year]))"
+    },
+    {
+      "name": "Average Margin",
+      "dax": "AVERAGE(Sales[Margin])"
+    },
+    {
+      "name": "Total Orders",
+      "dax": "DISTINCTCOUNT(Sales[Order ID])"
+    },
+    {
+      "name": "Latest Month Sales",
+      "dax": "VAR _LatestDate = CALCULATE(MAX(Sales[Order Date]), REMOVEFILTERS(Sales))\nVAR _LatestYear = YEAR(_LatestDate)\nVAR _LatestMonth = MONTH(_LatestDate)\nRETURN\n    CALCULATE(\n        [Total Sales],\n        KEEPFILTERS(Sales[Year] = _LatestYear),\n        KEEPFILTERS(Sales[Month] = _LatestMonth)\n    )"
+    },
+    {
+      "name": "Year To Date Sales",
+      "dax": "TOTALYTD([Total Sales], 'Sales'[Order Date])"
+    },
+    {
+      "name": "Distinct Customer Count",
+      "dax": "DISTINCTCOUNT(Sales[Customer ID])"
+    },
+    {
+      "name": "Sales Excluding North Region",
+      "dax": "CALCULATE([Total Sales], 'Sales'[Region] <> \"North\", 'Sales'[Year] = MAX('Sales'[Year]))"
+    },
+    {
+      "name": "Average Sales Per Customer",
+      "dax": "AVERAGEX(VALUES(Customers[Customer ID]), [Total Sales])"
+    }
+  ],
+  "tables": [
+    {
+      "name": "Customers"
+    },
+    {
+      "name": "_Measures"
+    },
+    {
+      "name": "Products"
+    },
+    {
+      "name": "Sales"
+    },
+    {
+      "name": "SalesChannels"
+    },
+    {
+      "name": "Sales by Product Dimension Selector"
+    },
+    {
+      "name": "DateTableTemplate_f9f2359d-438e-4f52-9e3f-f92533af479d"
+    }
+  ],
+  "columns": [],
+  "summary": {
+    "file": "sales_demo.pbix",
+    "source": "pbix_live_adomd_with_zip_pages",
+    "tables_count": 7,
+    "measures_count": 13,
+    "dax_measures_count": 13,
+    "dimensions_count": 0,
+    "visuals_count": 23,
+    "kpis_count": 13,
+    "pages_count": 3,
+    "columns_count": 0,
+    "tables_data_count": 0
+  }
+}

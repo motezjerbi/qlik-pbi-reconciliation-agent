@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[3] / "src"))
-from orchestrator.merge import merge_findings
+from orchestrator.merge_advanced import merge_findings
 from orchestrator.prioritize import prioritize_all
 from src.graph.state import AgentState
 

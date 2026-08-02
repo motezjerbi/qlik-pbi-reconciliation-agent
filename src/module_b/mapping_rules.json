@@ -1,0 +1,138 @@
+{
+  "rules": [
+    {
+      "pattern": "set_analysis",
+      "dax_template": "CALCULATE([{measure}], FILTER(ALL({table}), {table}[{dimension}] = {value}))",
+      "complexity": 3,
+      "priority": "HAUTE",
+      "examples": [
+        {
+          "qlik": "{<Year={2025}>}",
+          "dax": "CALCULATE([Total Sales], Sales[Year] = 2025)"
+        },
+        {
+          "qlik": "{<Year={$(vCurrentYear)}>}",
+          "dax": "CALCULATE([Total Sales], Sales[Year] = YEAR(TODAY()))"
+        }
+      ]
+    },
+    {
+      "pattern": "variable_dollar_expansion",
+      "dax_template": "VAR {variable} = {value}",
+      "complexity": 2,
+      "priority": "HAUTE",
+      "examples": [
+        {
+          "qlik": "$(vCurrentYear)",
+          "dax": "VAR CurrentYear = YEAR(TODAY())"
+        },
+        {
+          "qlik": "$(vMaxYear)",
+          "dax": "VAR MaxYear = CALCULATE(MAX(Sales[Year]), ALL(Sales))"
+        }
+      ]
+    },
+    {
+      "pattern": "variable_declaration",
+      "dax_template": "VAR {name} = {value}",
+      "complexity": 1,
+      "priority": "HAUTE",
+      "examples": [
+        {
+          "qlik": "SET vCurrentYear = Year(Today())",
+          "dax": "VAR CurrentYear = YEAR(TODAY())"
+        },
+        {
+          "qlik": "SET vTableName = 'Sales'",
+          "dax": "VAR TableName = 'Sales'"
+        }
+      ]
+    },
+    {
+      "pattern": "mapping_applymap",
+      "dax_template": "LOOKUPVALUE({value_table}[{value_field}], {value_table}[{key_field}], {key_value}, '{default}')",
+      "complexity": 3,
+      "priority": "HAUTE",
+      "examples": [
+        {
+          "qlik": "ApplyMap('MAP_PRODUCT_GROUP', ProductID, 'N/A')",
+          "dax": "LOOKUPVALUE(ProductGroup[Group], ProductGroup[ProductID], Sales[ProductID], 'N/A')"
+        }
+      ]
+    },
+    {
+      "pattern": "mapping_load",
+      "dax_template": "// Créer une table de correspondance DAX\n{value_table} = DATATABLE(\"{key_field}\", STRING, \"{value_field}\", STRING, ...)",
+      "complexity": 3,
+      "priority": "MOYENNE"
+    },
+    {
+      "pattern": "resident_group_by",
+      "dax_template": "SUMMARIZE({table}, {group_fields}, \"AggregatedColumn\", {aggregation})",
+      "complexity": 3,
+      "priority": "MOYENNE",
+      "examples": [
+        {
+          "qlik": "Resident Sales Group By CustomerID",
+          "dax": "SUMMARIZE(Sales, Sales[CustomerID], 'Total Sales', SUM(Sales[SalesAmount]))"
+        }
+      ]
+    },
+    {
+      "pattern": "left_join",
+      "dax_template": "NATURALLEFTOUTERJOIN({table1}, {table2})",
+      "complexity": 3,
+      "priority": "MOYENNE"
+    },
+    {
+      "pattern": "subroutine_definition",
+      "dax_template": "// Convertir en fonction DAX personnalisée ou Power Query M\n{name} = ({params}) => ...",
+      "complexity": 4,
+      "priority": "MOYENNE"
+    },
+    {
+      "pattern": "subroutine_call",
+      "dax_template": "// Appeler la fonction correspondante\n{name}({args})",
+      "complexity": 2,
+      "priority": "MOYENNE"
+    },
+    {
+      "pattern": "load_inline",
+      "dax_template": "DATATABLE({headers}, ...)",
+      "complexity": 2,
+      "priority": "HAUTE"
+    },
+    {
+      "pattern": "load_from_file",
+      "dax_template": "// Source dans Power Query\n= {file_path}",
+      "complexity": 2,
+      "priority": "HAUTE"
+    }
+  ],
+  
+  "dax_measure_detection": {
+    "keywords": ["SUM", "AVERAGE", "CALCULATE", "DIVIDE", "TOTALYTD", "DISTINCTCOUNT"],
+    "function_mapping": {
+      "SUM": "SUM",
+      "AVG": "AVERAGE",
+      "COUNT": "COUNT",
+      "MIN": "MIN",
+      "MAX": "MAX",
+      "ApplyMap": "LOOKUPVALUE"
+    }
+  },
+  
+  "qlik_functions": {
+    "mapping": {
+      "ApplyMap": "LOOKUPVALUE",
+      "Sum": "SUM",
+      "Avg": "AVERAGE",
+      "Count": "COUNT",
+      "Min": "MIN",
+      "Max": "MAX",
+      "Today": "TODAY",
+      "Year": "YEAR",
+      "Month": "MONTH"
+    }
+  }
+}

@@ -1,0 +1,127 @@
+﻿{
+  "set_analysis": {
+    "dax_patterns": {
+      "year_month": "CALCULATE with KEEPFILTERS for Year and Month",
+      "year_only": "CALCULATE with Year filter",
+      "year_dynamic": "CALCULATE with VAR and FILTER for dynamic year",
+      "complex": "CALCULATE with multiple filters",
+      "custom": ""
+    },
+    "examples": {
+      "year_month": "CALCULATE([Total Sales], KEEPFILTERS(Sales[Year] = _LatestYear), KEEPFILTERS(Sales[Month] = _LatestMonth))",
+      "year_only": "CALCULATE([Total Sales], Sales[Year] = 2025)",
+      "year_dynamic": "VAR CurrentYear = YEAR(TODAY()) RETURN CALCULATE([Total Sales], Sales[Year] = CurrentYear)",
+      "complex": "CALCULATE([Total Sales], FILTER(ALL(Sales), ...))"
+    },
+    "complexity_weights": {
+      "tables": 0.5,
+      "columns": 0.3,
+      "variables": 0.4,
+      "functions": 0.6,
+      "filters": 0.5,
+      "aggregations": 0.7,
+      "joins": 0.8
+    },
+    "detection_rules": {
+      "dynamic_year": ["vCurrentYear", "Year(Today())", "Year(Now())"],
+      "static_year": ["vMaxYear", "2025", "2024"],
+      "with_month": ["Month", "vMaxMonth"]
+    }
+  },
+  "resident_group_by": {
+    "dax_patterns": {
+      "default": "SUMMARIZE or GROUPBY",
+      "simple": "SUMMARIZE with single column",
+      "complex": "GROUPBY with multiple columns",
+      "custom": ""
+    },
+    "examples": {
+      "default": "SUMMARIZE(Sales, Sales[CustomerID], 'Total Sales', SUM(Sales[SalesAmount]))",
+      "simple": "SUMMARIZE(Sales, Sales[CustomerID], 'Sales', SUM(Sales[SalesAmount]))",
+      "complex": "GROUPBY(Sales, Sales[CustomerID], Sales[ProductID], 'Total Sales', SUMX(CURRENTGROUP(), Sales[SalesAmount]))"
+    },
+    "complexity_weights": {
+      "tables": 0.8,
+      "columns": 0.5,
+      "aggregations": 0.9
+    },
+    "detection_rules": {
+      "group_by_columns": ["CustomerID", "ProductID", "Region", "ChannelID"]
+    }
+  },
+  "mapping_applymap": {
+    "dax_patterns": {
+      "default": "LOOKUPVALUE",
+      "with_default": "LOOKUPVALUE with default value",
+      "custom": ""
+    },
+    "examples": {
+      "default": "LOOKUPVALUE(MappingTable[TargetColumn], MappingTable[KeyColumn], Sales[KeyColumn])",
+      "with_default": "COALESCE(LOOKUPVALUE(MappingTable[TargetColumn], MappingTable[KeyColumn], Sales[KeyColumn]), 'N/A')"
+    },
+    "complexity_weights": {
+      "tables": 0.7,
+      "columns": 0.6
+    },
+    "detection_rules": {
+      "mapping_tables": ["MAP_PRODUCT_GROUP_MAP"],
+      "target_fields": ["ProductGroupe"]
+    }
+  },
+  "left_join": {
+    "dax_patterns": {
+      "default": "NATURALLEFTOUTERJOIN or Power Query",
+      "power_query": "Merge tables in Power Query",
+      "custom": ""
+    },
+    "examples": {
+      "default": "NATURALLEFTOUTERJOIN(Table1, Table2)",
+      "power_query": "Table.NestedJoin(Table1, 'Key', Table2, 'Key', 'NewColumn')"
+    },
+    "complexity_weights": {
+      "tables": 0.8,
+      "joins": 1.0
+    },
+    "detection_rules": {
+      "join_tables": ["Customers", "Sales", "Products"]
+    }
+  },
+  "subroutine": {
+    "dax_patterns": {
+      "default": "DAX Function or Power Query",
+      "simple": "Calculated Column",
+      "complex": "Custom DAX Function",
+      "custom": ""
+    },
+    "examples": {
+      "default": "CREATE FUNCTION ...",
+      "simple": "Column = [Table[Column1]] + [Table[Column2]]",
+      "complex": "DEFINE VAR FunctionName = ... RETURN ..."
+    },
+    "complexity_weights": {
+      "variables": 0.9,
+      "functions": 1.0
+    },
+    "detection_rules": {
+      "subroutine_names": ["LoadFile"]
+    }
+  },
+  "mapping_load": {
+    "dax_patterns": {
+      "default": "Calculated Table",
+      "inline": "DATATABLE",
+      "custom": ""
+    },
+    "examples": {
+      "default": "MappingTable = SUMMARIZE(SourceTable, SourceTable[Key], 'Value', MAX(SourceTable[Value]))",
+      "inline": "DATATABLE('ProductID', STRING, 'ProductGroupe', STRING, {{'P1', 'Hard'}, {'P2', 'ACC'}})"
+    },
+    "complexity_weights": {
+      "tables": 0.7,
+      "columns": 0.6
+    },
+    "detection_rules": {
+      "inline_data": ["INLINE", "[", "]"]
+    }
+  }
+}

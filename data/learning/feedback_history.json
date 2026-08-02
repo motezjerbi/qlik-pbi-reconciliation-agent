@@ -1,0 +1,112 @@
+﻿[
+  {
+    "pattern_type": "set_analysis",
+    "expression": "{<Year={$(vMaxYear)}>}",
+    "feedback": {
+      "statut": "COUVERT",
+      "accuracy": 0.9,
+      "correction_dax": "CALCULATE([Total Sales], Sales[Year] = MAX(Sales[Year]))"
+    },
+    "timestamp": "2026-07-27T14:00:00",
+    "accuracy": 0.9
+  },
+  {
+    "pattern_type": "set_analysis",
+    "expression": "{<Year={$(vMaxYear)},Month={$(vMaxMonth)}>}",
+    "feedback": {
+      "statut": "PARTIELLEMENT_COUVERT",
+      "accuracy": 0.8,
+      "correction_dax": "VAR LatestYear = MAX(Sales[Year]) VAR LatestMonth = MAX(Sales[Month]) RETURN CALCULATE([Total Sales], Sales[Year] = LatestYear, Sales[Month] = LatestMonth)"
+    },
+    "timestamp": "2026-07-27T14:05:00",
+    "accuracy": 0.8
+  },
+  {
+    "pattern_type": "variable_dollar_expansion",
+    "expression": "$(vTableName)",
+    "feedback": {
+      "statut": "COUVERT",
+      "accuracy": 0.95,
+      "correction_dax": "VAR TableName = 'Table'"
+    },
+    "timestamp": "2026-07-27T14:10:00",
+    "accuracy": 0.95
+  },
+  {
+    "pattern_type": "variable_dollar_expansion",
+    "expression": "$(vMaxYear)",
+    "feedback": {
+      "statut": "COUVERT",
+      "accuracy": 0.9,
+      "correction_dax": "VAR MaxYear = MAX(Sales[Year])"
+    },
+    "timestamp": "2026-07-27T14:15:00",
+    "accuracy": 0.9
+  },
+  {
+    "pattern_type": "mapping_applymap",
+    "expression": "ApplyMap('MAP_PRODUCT_GROUP_MAP',ProductID,'N/A')",
+    "feedback": {
+      "statut": "PARTIELLEMENT_COUVERT",
+      "accuracy": 0.7,
+      "correction_dax": "LOOKUPVALUE(ProductGroup[ProductGroupe], ProductGroup[ProductID], Sales[ProductID])"
+    },
+    "timestamp": "2026-07-27T14:20:00",
+    "accuracy": 0.7
+  },
+  {
+    "pattern_type": "resident_group_by",
+    "expression": "RESIDENT Sales GROUP BY CustomerID",
+    "feedback": {
+      "statut": "PARTIELLEMENT_COUVERT",
+      "accuracy": 0.75,
+      "correction_dax": "SUMMARIZE(Sales, Sales[CustomerID], 'Sales', SUM(Sales[SalesAmount]))"
+    },
+    "timestamp": "2026-07-27T14:25:00",
+    "accuracy": 0.75
+  },
+  {
+    "pattern_type": "left_join",
+    "expression": "left join(Customers)",
+    "feedback": {
+      "statut": "PARTIELLEMENT_COUVERT",
+      "accuracy": 0.7,
+      "correction_dax": "NATURALLEFTOUTERJOIN(Sales, Customers)"
+    },
+    "timestamp": "2026-07-27T14:30:00",
+    "accuracy": 0.7
+  },
+  {
+    "pattern_type": "subroutine_definition",
+    "expression": "SUB LoadFile(vFileName, vTableName)",
+    "feedback": {
+      "statut": "PARTIELLEMENT_COUVERT",
+      "accuracy": 0.65,
+      "correction_dax": "Fonction Power Query ou DAX personnalisée"
+    },
+    "timestamp": "2026-07-27T14:35:00",
+    "accuracy": 0.65
+  },
+  {
+    "pattern_type": "subroutine_call",
+    "expression": "CALL LoadFile('Channels', 'SalesChannels')",
+    "feedback": {
+      "statut": "PARTIELLEMENT_COUVERT",
+      "accuracy": 0.65,
+      "correction_dax": "Appel de la fonction Power Query ou DAX"
+    },
+    "timestamp": "2026-07-27T14:40:00",
+    "accuracy": 0.65
+  },
+  {
+    "pattern_type": "mapping_load",
+    "expression": "Mapping LOAD * INLINE [ProductID,ProductGroupe P1,Hard P2,ACC]",
+    "feedback": {
+      "statut": "PARTIELLEMENT_COUVERT",
+      "accuracy": 0.7,
+      "correction_dax": "DATATABLE('ProductID', STRING, 'ProductGroupe', STRING, {{'P1', 'Hard'}, {'P2', 'ACC'}})"
+    },
+    "timestamp": "2026-07-27T14:45:00",
+    "accuracy": 0.7
+  }
+]

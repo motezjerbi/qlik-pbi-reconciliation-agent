@@ -1,918 +1,1178 @@
+# app.py
 import sys
-import re
-from pathlib import Path
-import pandas as pd
-import streamlit as st
+import io
 import json
 import datetime
+import traceback
+from pathlib import Path
+
+import pandas as pd
+import streamlit as st
 
 sys.path.append(str(Path(__file__).resolve().parent / "src"))
-from module_a.comparison import compare_exports
-from module_b.taxonomy import TAXONOMY_PATTERNS
-from module_b.qlik_parser import parse_qlik_script
-from module_b.mapping import map_all_patterns
-from module_b.mapping import map_pattern_to_dax as map_pattern_to_dax_eval
-from orchestrator.merge import merge_findings
-from orchestrator.prioritize import prioritize_all
-from llm.client import ask_claude
-from graph.build_graph import build_reconciliation_graph
+
+# === MODULE A ===
+from module_a.extractors.qlik_extractor import QlikExtractor
+from module_a.extractors.pbi_extractor import PBIExtractor
+from module_a.kpi_reconciliation import reconcile_kpis, SEUIL_TOLERANCE
+
+# === MODULE B (optionnel) ===
+try:
+    from module_a.visual_gap_analyzer import detect_structural_gaps
+except ImportError:
+    detect_structural_gaps = None
+
+try:
+    from module_b.coverage_analyzer import analyze_coverage_quick, parse_dax_measures_text
+except ImportError:
+    analyze_coverage_quick = None
+    parse_dax_measures_text = None
+
+try:
+    from module_b.mapping import map_pattern_to_dax as map_pattern_to_dax_eval, auto_evaluate_against_rules
+except ImportError:
+    map_pattern_to_dax_eval = None
+    auto_evaluate_against_rules = None
+
+try:
+    from orchestrator.merge_advanced import merge_findings as orchestrator_merge_findings
+    from orchestrator.report_generator import generate_report as orchestrator_generate_report, generate_executive_summary
+except ImportError:
+    orchestrator_merge_findings = None
+    orchestrator_generate_report = None
+    generate_executive_summary = None
 
 st.set_page_config(
     page_title="Migration Audit — Qlik → Power BI",
-    page_icon="📋",
+    page_icon="▪",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded",
 )
 
 # ============================================================
-# CSS Professionnel - Style "Cabinet de Conseil"
+# DESIGN SYSTEM / CSS
 # ============================================================
 
-st.markdown("""
+st.markdown(
+    """
 <style>
-/* ===== IMPORTS POLICES ===== */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-/* ===== BASE ===== */
-html, body, [class*="css"] {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: #F8F7F4;
+:root {
+    --bg:            #F4F5F7;
+    --surface:        #FFFFFF;
+    --surface-alt:    #FAFAFB;
+    --border:         #E3E5EA;
+    --border-strong:  #C9CCD4;
+    --text-primary:   #12141C;
+    --text-secondary: #63677A;
+    --text-muted:     #9498A6;
+    --accent:         #1E3A8A;
+    --accent-bright:  #2D4FC7;
+    --accent-soft:    #EEF1FB;
+    --success:        #166534;
+    --success-soft:   #EAF5EC;
+    --warning:        #92400E;
+    --warning-soft:   #FCF3E4;
+    --critical:       #991B1B;
+    --critical-soft:  #FBEAEA;
+    --neutral-soft:   #F0F1F4;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --shadow-sm: 0 1px 2px rgba(16,18,26,0.04);
+    --shadow-md: 0 2px 10px rgba(16,18,26,0.06);
 }
 
-/* ===== TYPOGRAPHIE ===== */
+html, body, [class*="css"] {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+}
 h1, h2, h3, h4, h5, h6 {
     font-family: 'Inter', sans-serif !important;
     font-weight: 700 !important;
-    letter-spacing: -0.02em !important;
+    letter-spacing: -0.01em !important;
+    color: var(--text-primary);
 }
-h1 { font-size: 2.2rem !important; }
-h2 { font-size: 1.6rem !important; }
-h3 { font-size: 1.2rem !important; }
-
 code, .stCode, [data-testid="stMarkdownContainer"] code {
     font-family: 'JetBrains Mono', monospace !important;
-    font-size: 0.82rem !important;
+    font-size: 0.8rem !important;
+    background: var(--neutral-soft) !important;
+    color: var(--text-primary) !important;
 }
+[data-testid="stAppViewContainer"] { background: var(--bg); }
+[data-testid="stHeader"] { background: transparent; }
 
-/* ===== HEADER ===== */
-.header-container {
-    background: #FFFFFF;
-    border-bottom: 3px solid #1A1F2B;
-    padding: 1.2rem 2rem;
-    margin: -1rem -1rem 1.5rem -1rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+/* ---------- Top bar ---------- */
+.topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 1.1rem 2rem;
+    margin: -1rem -1rem 1.75rem -1rem;
 }
-.header-content {
-    max-width: 1400px;
+.topbar-inner {
+    max-width: 1300px;
     margin: 0 auto;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
-.header-left {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
+.topbar-left { display: flex; align-items: center; gap: 0.9rem; }
+.topbar-mark {
+    width: 38px; height: 38px; background: var(--accent); border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    color: #FFFFFF; font-weight: 700; font-size: 0.78rem; letter-spacing: 0.06em;
 }
-.header-logo {
-    width: 40px;
-    height: 40px;
-    background: #1A1F2B;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #FFFFFF;
-    font-weight: 800;
-    font-size: 0.9rem;
-    letter-spacing: 0.1em;
+.topbar-title h1 { font-size: 1.25rem !important; margin: 0; line-height: 1.25; }
+.topbar-title .sub {
+    font-size: 0.74rem; font-weight: 400; color: var(--text-secondary); letter-spacing: 0.02em;
+    margin-top: 0.1rem;
 }
-.header-title h1 {
-    font-size: 1.4rem !important;
-    margin: 0;
-    line-height: 1.2;
+.topbar-meta { text-align: right; font-size: 0.74rem; color: var(--text-secondary); line-height: 1.55; }
+.topbar-meta strong { color: var(--text-primary); font-weight: 600; }
+.status-pill {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.22rem 0.7rem; border-radius: 20px;
+    font-weight: 600; font-size: 0.68rem; letter-spacing: 0.03em; text-transform: uppercase;
+    background: var(--accent-soft); color: var(--accent);
 }
-.header-title .sub {
-    font-size: 0.75rem;
-    font-weight: 400;
-    color: #6B6F78;
-    letter-spacing: 0.05em;
-}
-.header-meta {
-    text-align: right;
-    font-size: 0.75rem;
-    color: #6B6F78;
-    line-height: 1.6;
-}
-.header-meta strong { color: #1A1F2B; font-weight: 600; }
-.header-meta .badge-status {
-    display: inline-block;
-    padding: 0.2rem 0.8rem;
-    border-radius: 20px;
-    font-weight: 600;
-    font-size: 0.7rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-}
-.badge-draft { background: #F0EDE6; color: #6B6F78; }
-.badge-active { background: #E8F0E8; color: #2E7D5B; }
+.status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-bright); }
 
-/* ===== CARTES ===== */
+/* ---------- Sidebar ---------- */
+section[data-testid="stSidebar"] {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+}
+section[data-testid="stSidebar"] .block-container { padding-top: 1.5rem; }
+.side-brand { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; color: var(--text-muted);
+    text-transform: uppercase; margin-bottom: 1rem; padding: 0 0.2rem;}
+.side-progress {
+    border-top: 1px solid var(--border); margin-top: 1.2rem; padding-top: 1rem;
+}
+.side-progress-title {
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em; color: var(--text-muted);
+    text-transform: uppercase; margin-bottom: 0.65rem;
+}
+.side-progress-row {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 0.78rem; color: var(--text-secondary); padding: 0.28rem 0;
+}
+.side-progress-row .label { display: flex; align-items: center; gap: 0.5rem; }
+.chip { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase;
+    padding: 0.12rem 0.5rem; border-radius: 20px; }
+.chip-done { background: var(--success-soft); color: var(--success); }
+.chip-pending { background: var(--neutral-soft); color: var(--text-muted); }
+
+section[data-testid="stSidebar"] div[role="radiogroup"] label {
+    padding: 0.55rem 0.7rem; border-radius: var(--radius-sm); margin-bottom: 0.15rem;
+    transition: background 0.12s ease;
+}
+section[data-testid="stSidebar"] div[role="radiogroup"] label:hover { background: var(--neutral-soft); }
+
+/* ---------- Cards & sections ---------- */
+.section-heading {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 0.3rem;
+}
+.section-heading h2 { font-size: 1.35rem !important; margin: 0; }
+.section-tag {
+    font-size: 0.7rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--accent);
+}
+.section-lead {
+    font-size: 0.88rem; color: var(--text-secondary); margin: 0.25rem 0 1.5rem 0;
+    max-width: 760px; line-height: 1.55;
+}
 .card {
-    background: #FFFFFF;
-    border: 1px solid #E8E5DE;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 1.25rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
-    transition: box-shadow 0.2s ease;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 1.5rem 1.6rem; margin-bottom: 1.25rem; box-shadow: var(--shadow-sm);
 }
-.card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
 .card-header {
-    font-weight: 600;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #6B6F78;
-    margin-bottom: 0.8rem;
-    border-bottom: 1px solid #F0EDE6;
-    padding-bottom: 0.6rem;
+    font-weight: 600; font-size: 0.76rem; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--text-secondary); margin-bottom: 0.9rem;
+    border-bottom: 1px solid var(--border); padding-bottom: 0.65rem;
 }
+hr.divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
 
-/* ===== STATS / KPI ===== */
+/* ---------- KPI grid ---------- */
 .kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 0.75rem;
-    margin: 1rem 0 1.5rem 0;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem; margin: 0.5rem 0 1.5rem 0;
 }
 .kpi-card {
-    background: #FFFFFF;
-    border: 1px solid #E8E5DE;
-    border-radius: 10px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
     padding: 1rem 1.2rem;
-    text-align: center;
 }
-.kpi-value {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #1A1F2B;
-    line-height: 1.2;
-}
+.kpi-value { font-size: 1.55rem; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
 .kpi-label {
-    font-size: 0.7rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #6B6F78;
-    margin-top: 0.2rem;
+    font-size: 0.65rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--text-muted); margin-top: 0.25rem;
 }
-.kpi-critical .kpi-value { color: #C0392B; }
-.kpi-warning .kpi-value { color: #E67E22; }
-.kpi-success .kpi-value { color: #2E7D5B; }
-.kpi-neutral .kpi-value { color: #6B6F78; }
+.kpi-critical .kpi-value { color: var(--critical); }
+.kpi-warning .kpi-value { color: var(--warning); }
+.kpi-success .kpi-value { color: var(--success); }
+.kpi-neutral .kpi-value { color: var(--text-secondary); }
 
-/* ===== TABS ===== */
-.stTabs [data-baseweb="tab-list"] {
-    gap: 0.25rem;
-    border-bottom: 2px solid #E8E5DE;
+/* ---------- Badges ---------- */
+.match-badge {
+    display: inline-block; padding: 0.12rem 0.55rem; border-radius: 20px;
+    font-size: 0.66rem; font-weight: 600; letter-spacing: 0.02em;
 }
-.stTabs [data-baseweb="tab"] {
-    font-family: 'Inter', sans-serif;
-    font-weight: 600;
-    font-size: 0.85rem;
-    color: #6B6F78;
-    padding: 0.6rem 1.2rem;
-    border-radius: 8px 8px 0 0;
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s ease;
+.match-exact  { background: var(--success-soft); color: var(--success); }
+.match-approx { background: var(--warning-soft); color: var(--warning); }
+.match-none   { background: var(--critical-soft); color: var(--critical); }
+
+.crit-badge {
+    display: inline-block; padding: 0.14rem 0.6rem; border-radius: 20px;
+    font-size: 0.66rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
 }
-.stTabs [data-baseweb="tab"]:hover {
-    color: #1A1F2B;
-    background: #F5F3EE;
-}
-.stTabs [aria-selected="true"] {
-    color: #1A1F2B !important;
-    background: #FFFFFF !important;
-    border-bottom: 2px solid #1A1F2B !important;
+.crit-BLOQUANT { background: var(--critical-soft); color: var(--critical); }
+.crit-MAJEUR   { background: var(--warning-soft); color: var(--warning); }
+.crit-MINEUR   { background: var(--neutral-soft); color: var(--text-secondary); }
+.crit-OK       { background: var(--success-soft); color: var(--success); }
+
+/* ---------- Callout ---------- */
+.callout {
+    background: var(--surface-alt); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+    border-radius: var(--radius-md); padding: 0.85rem 1.1rem; margin-bottom: 1.5rem;
+    font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;
 }
 
-/* ===== BOUTONS ===== */
-.stButton button {
-    font-family: 'Inter', sans-serif !important;
-    font-weight: 600 !important;
-    border-radius: 8px !important;
-    border: none !important;
-    padding: 0.5rem 1.5rem !important;
-    transition: all 0.2s ease !important;
-}
+/* ---------- Buttons ---------- */
 .stButton button[kind="primary"] {
-    background: #1A1F2B !important;
-    color: #FFFFFF !important;
+    background: var(--accent) !important; color: #FFFFFF !important; border: none !important;
+    border-radius: var(--radius-sm) !important; font-weight: 600 !important; letter-spacing: 0.01em;
 }
-.stButton button[kind="primary"]:hover {
-    background: #2E7D5B !important;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(46,125,91,0.25);
-}
-.stButton button:not([kind="primary"]) {
-    background: #F0EDE6 !important;
-    color: #1A1F2B !important;
-}
-.stButton button:not([kind="primary"]):hover {
-    background: #E8E5DE !important;
+.stButton button[kind="primary"]:hover { background: var(--accent-bright) !important; }
+.stDownloadButton button {
+    border-radius: var(--radius-sm) !important; font-weight: 500 !important;
+    border-color: var(--border-strong) !important;
 }
 
-/* ===== EXPANDERS ===== */
-[data-testid="stExpander"] {
-    border: 1px solid #E8E5DE !important;
-    border-radius: 10px !important;
-    box-shadow: none !important;
-}
-[data-testid="stExpander"]:hover {
-    border-color: #D0CCC2 !important;
-}
-[data-testid="stExpander"] summary {
-    font-weight: 500 !important;
-    font-size: 0.9rem !important;
-}
+/* ---------- Misc ---------- */
+[data-testid="stMetricValue"] { font-size: 1.4rem; font-weight: 700; }
+[data-testid="stMetricLabel"] { font-size: 0.7rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-secondary); }
+.streamlit-expanderHeader { font-size: 0.86rem !important; font-weight: 500 !important; }
 
-/* ===== METRICS ===== */
-[data-testid="stMetric"] {
-    background: #FFFFFF;
-    border: 1px solid #E8E5DE;
-    border-radius: 10px;
-    padding: 1rem 1.2rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-}
-[data-testid="stMetricLabel"] {
-    font-family: 'Inter', sans-serif !important;
-    font-weight: 500 !important;
-    font-size: 0.7rem !important;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #6B6F78 !important;
-}
-[data-testid="stMetricValue"] {
-    font-weight: 700 !important;
-    color: #1A1F2B !important;
-}
-
-/* ===== BADGES ===== */
-.badge {
-    display: inline-block;
-    padding: 0.2rem 0.7rem;
-    border-radius: 20px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-}
-.badge-critical { background: #FDE8E8; color: #C0392B; }
-.badge-major { background: #FEF3E7; color: #E67E22; }
-.badge-minor { background: #F0EDE6; color: #6B6F78; }
-.badge-success { background: #E8F0E8; color: #2E7D5B; }
-.badge-qlik { background: #E8F0E8; color: #2E7D5B; }
-.badge-pbi { background: #FEF3E7; color: #D68910; }
-
-/* ===== ALERTS ===== */
-[data-testid="stAlert"] {
-    border-radius: 10px !important;
-    border: none !important;
-}
-[data-testid="stAlert"] .stAlert {
-    border-radius: 10px !important;
-}
-
-/* ===== FOOTER ===== */
 .footer {
-    margin-top: 2.5rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid #E8E5DE;
-    font-size: 0.7rem;
-    color: #8A8F98;
-    text-align: center;
-    letter-spacing: 0.03em;
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-    .header-content { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
-    .header-meta { text-align: left; width: 100%; }
-    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    margin-top: 2.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border);
+    font-size: 0.7rem; color: var(--text-muted); text-align: center;
 }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # ============================================================
-# HEADER PROFESSIONNEL
+# TOP BAR
 # ============================================================
 
 today = datetime.date.today().strftime("%d %B %Y")
 ref = f"QA-{datetime.date.today().strftime('%Y%m%d')}"
 
-st.markdown(f"""
-<div class="header-container">
-    <div class="header-content">
-        <div class="header-left">
-            <div class="header-logo">QA</div>
-            <div class="header-title">
-                <h1>Migration Quality Audit</h1>
-                <div class="sub">Qlik Sense → Power BI · Automated Reconciliation</div>
-            </div>
-        </div>
-        <div class="header-meta">
-            <div><strong>Référence</strong> {ref}</div>
-            <div><strong>Date</strong> {today}</div>
-            <div style="margin-top: 0.3rem;">
-                <span class="badge-status badge-active">● En cours</span>
-            </div>
-        </div>
+st.markdown(
+    f"""
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-left">
+      <div class="topbar-mark">QA</div>
+      <div class="topbar-title">
+        <h1>Migration Quality Audit</h1>
+        <div class="sub">Qlik Sense → Power BI · Réconciliation automatisée</div>
+      </div>
     </div>
+    <div class="topbar-meta">
+      <div><strong>Référence</strong> {ref}</div>
+      <div><strong>Date</strong> {today}</div>
+      <div style="margin-top:0.35rem;">
+        <span class="status-pill"><span class="dot"></span>En cours</span>
+      </div>
+    </div>
+  </div>
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # ============================================================
-# FONCTIONS UTILITAIRES
+# HELPERS
 # ============================================================
 
-def load_uploaded_file(uploaded_file):
-    if uploaded_file.name.lower().endswith((".xlsx", ".xls")):
-        return pd.read_excel(uploaded_file)
-    return pd.read_csv(uploaded_file)
 
-
-def clean_numeric_value(val):
-    if pd.isna(val):
-        return None
-    s = str(val).strip()
-    has_pct = "%" in s
-    s = re.sub(r"[^0-9,.\-]", "", s)
-    if not s:
-        return None
-    s = s.replace(",", ".")
-    try:
-        num = float(s)
-    except ValueError:
-        return None
-    return num / 100 if has_pct else num
-
-
-def auto_clean_numeric(series: pd.Series) -> pd.Series:
-    return series.apply(clean_numeric_value)
-
-
-def extract_base_name(filename: str) -> str:
-    name = Path(filename).stem.lower()
-    name = re.sub(r"_(qlik|pbi)(\d*)$", "", name)
-    name = re.sub(r"_(qlik|pbi)_\d+$", "", name)
-    return name
-
-
-def guess_key_value_columns(df: pd.DataFrame):
-    numeric_cols = []
-    text_cols = []
-    for col in df.columns:
-        sample = df[col].dropna().astype(str).head(5)
-        cleaned = sample.apply(clean_numeric_value)
-        if len(sample) > 0 and cleaned.notna().sum() >= max(1, len(sample) - 1):
-            numeric_cols.append(col)
-        else:
-            text_cols.append(col)
-
-    if text_cols and numeric_cols:
-        return text_cols[0], numeric_cols[0]
-    if not text_cols and len(numeric_cols) >= 2:
-        return numeric_cols[0], numeric_cols[1]
-    if text_cols and len(text_cols) >= 2:
-        return text_cols[0], text_cols[1]
-    key_col = text_cols[0] if text_cols else (numeric_cols[0] if numeric_cols else None)
-    value_col = numeric_cols[0] if numeric_cols else (df.columns[-1] if len(df.columns) else None)
-    return key_col, value_col
-
-
-def guess_key_column(df: pd.DataFrame):
-    for col in df.columns:
-        sample = df[col].dropna().astype(str).head(5)
-        cleaned = sample.apply(clean_numeric_value)
-        if len(sample) > 0 and cleaned.notna().sum() < len(sample):
-            return col
-    return df.columns[0] if len(df.columns) else None
-
-
-def get_numeric_columns(df: pd.DataFrame, exclude: str = None) -> list[str]:
-    numeric_cols = []
-    for col in df.columns:
-        if col == exclude:
-            continue
-        sample = df[col].dropna().astype(str).head(5)
-        cleaned = sample.apply(clean_numeric_value)
-        if len(sample) > 0 and cleaned.notna().sum() >= max(1, len(sample) - 1):
-            numeric_cols.append(col)
-    return numeric_cols
-
-
-def normalize_col_name(name: str) -> str:
-    return re.sub(r"[\s_]+", "", name.lower())
-
-
-def match_numeric_columns(qlik_cols: list[str], pbi_cols: list[str]) -> list[tuple[str, str]]:
-    pairs = []
-    used_pbi = set()
-    for qcol in qlik_cols:
-        qnorm = normalize_col_name(qcol)
-        best_match = None
-        for pcol in pbi_cols:
-            if pcol in used_pbi:
-                continue
-            pnorm = normalize_col_name(pcol)
-            if qnorm == pnorm or qnorm in pnorm or pnorm in qnorm:
-                best_match = pcol
-                break
-        if best_match:
-            pairs.append((qcol, best_match))
-            used_pbi.add(best_match)
-    return pairs
-
-
-def generate_executive_summary(findings: list) -> str:
-    if not findings:
-        return "Aucun problème détecté sur les éléments testés. La migration est conforme."
-
-    nb_bloquant = sum(1 for f in findings if f["criticite"] == "BLOQUANT")
-    nb_majeur = sum(1 for f in findings if f["criticite"] == "MAJEUR")
-    nb_mineur = sum(1 for f in findings if f["criticite"] == "MINEUR")
-
-    resume_findings = "\n".join(
-        f"- [{f['criticite']}] {f['source_module']} : {f['libelle']} — {f['detail']}"
-        for f in findings
-    )
-
-    prompt = f"""Tu es un consultant senior en migration Qlik Sense vers Power BI.
-Rédige un résumé exécutif court (5-6 phrases maximum) pour un rapport de réconciliation post-migration,
-à destination d'un consultant qui doit valider et corriger les problèmes.
-
-Statistiques : {nb_bloquant} problème(s) bloquant(s), {nb_majeur} majeur(s), {nb_mineur} mineur(s).
-
-Détail des findings :
-{resume_findings}
-
-Le résumé doit être factuel, professionnel, et donner une vue d'ensemble du niveau de risque de cette migration."""
-
-    return ask_claude(prompt)
-
-
-def render_badge(criticite: str) -> str:
-    css_map = {
-        "BLOQUANT": "badge-critical",
-        "MAJEUR": "badge-major",
-        "MINEUR": "badge-minor"
-    }
-    return f'<span class="badge {css_map.get(criticite, "badge-minor")}">{criticite}</span>'
-
-
-def style_comparison_df(df: pd.DataFrame):
-    def highlight_cols(col):
-        if "_qlik" in col.name or "__value___qlik" in col.name:
-            return ['background-color: rgba(46,125,91,0.06)'] * len(col)
-        if "_pbi" in col.name or "__value___pbi" in col.name:
-            return ['background-color: rgba(214,137,16,0.07)'] * len(col)
-        return [''] * len(col)
-    return df.style.apply(highlight_cols, axis=0)
-
-
-def render_kpi_grid(stats: dict):
+def render_kpi_grid(stats: dict) -> str:
     items = [
         ("BLOQUANT", stats.get("bloquant", 0), "critical"),
         ("MAJEUR", stats.get("majeur", 0), "warning"),
         ("MINEUR", stats.get("mineur", 0), "neutral"),
-        ("COUVERT", stats.get("couvert", 0), "success"),
+        ("OK / MATCH", stats.get("ok", 0), "success"),
     ]
-    cards_html = "".join(
-        f'<div class="kpi-card kpi-{type_class}"><div class="kpi-value">{value}</div><div class="kpi-label">{label}</div></div>'
-        for label, value, type_class in items
+    cards = "".join(
+        f'<div class="kpi-card kpi-{t}"><div class="kpi-value">{v}</div>'
+        f'<div class="kpi-label">{lab}</div></div>'
+        for lab, v, t in items
     )
-    return f'<div class="kpi-grid">{cards_html}</div>'
+    return f'<div class="kpi-grid">{cards}</div>'
 
 
-if "all_comparisons" not in st.session_state:
-    st.session_state["all_comparisons"] = {}
+def match_badge(match_type: str) -> str:
+    cls = {
+        "EXACT_ID": "match-exact",
+        "EXACT_NOM": "match-exact",
+        "APPROX": "match-approx",
+        "AUCUN": "match-none",
+    }.get(match_type, "match-none")
+    return f'<span class="match-badge {cls}">{match_type}</span>'
 
-if "missing_pbi" not in st.session_state:
-    st.session_state["missing_pbi"] = []
 
-if "comparison_failures" not in st.session_state:
-    st.session_state["comparison_failures"] = []
+def crit_badge(criticite: str) -> str:
+    c = criticite if criticite in ("BLOQUANT", "MAJEUR", "MINEUR", "OK") else "MINEUR"
+    return f'<span class="crit-badge crit-{c}">{c}</span>'
+
+
+def findings_from_reconciliation(rec_df: pd.DataFrame) -> list:
+    findings = []
+    if rec_df is None or rec_df.empty:
+        return findings
+    for _, row in rec_df.iterrows():
+        statut = row.get("statut", "")
+        criticite = row.get("criticite", "MINEUR")
+        if statut == "MATCH_VALUE" or criticite == "OK":
+            continue
+        findings.append(
+            {
+                "source_module": "Module A - Data Reconciliation",
+                "libelle": f"{row.get('kpi') or row.get('kpi_pbi', '')} [{statut}]",
+                "detail": (
+                    f"Qlik={row.get('valeur_qlik')} | PBI={row.get('valeur_pbi')} | "
+                    f"feuille Qlik={row.get('sheet_qlik')} | page PBI={row.get('page_pbi')} | "
+                    f"correspondance={row.get('match_type')} (score {row.get('match_score')})"
+                ),
+                "criticite": criticite if criticite != "OK" else "MINEUR",
+                "diagnostic": row.get("cause_probable", ""),
+                "recommandation": row.get("correction", ""),
+                "statut": statut,
+            }
+        )
+    return findings
+
+
+def show_ecarts_expanders(rec_df: pd.DataFrame) -> None:
+    action = rec_df[
+        rec_df["statut"].isin(
+            ["ECART_VALEUR", "MANQUANT_PBI", "MANQUANT_QLIK", "ERREUR_PBI"]
+        )
+    ]
+    if action.empty:
+        st.success("Aucun écart numérique hors tolérance à traiter.")
+        return
+    ordre = {"BLOQUANT": 0, "MAJEUR": 1, "MINEUR": 2}
+    action = action.assign(_ordre=action["criticite"].map(ordre).fillna(3))
+    action = action.sort_values("_ordre")
+
+    for _, row in action.iterrows():
+        with st.expander(
+            f"{row.get('criticite')} — {row.get('kpi') or row.get('kpi_pbi')} — {row.get('statut')}"
+        ):
+            st.markdown(
+                f"**Rapprochement :** {match_badge(row.get('match_type', 'AUCUN'))} "
+                f"(score {row.get('match_score', 0):.2f})",
+                unsafe_allow_html=True,
+            )
+            st.write(
+                f"**Localisation Qlik :** feuille=`{row.get('sheet_qlik', '')}` | "
+                f"id=`{row.get('id', '')}`"
+            )
+            st.write(f"**Localisation PBI :** page=`{row.get('page_pbi', '')}`")
+            st.write(
+                f"**KPI Qlik :** `{row.get('kpi') or '—'}` · "
+                f"**KPI PBI :** `{row.get('kpi_pbi') or '—'}`"
+            )
+            st.write(
+                f"**Valeur Qlik :** `{row.get('valeur_qlik')}` · "
+                f"**Valeur PBI :** `{row.get('valeur_pbi')}`"
+            )
+            if row.get("expr_qlik"):
+                st.write(f"**Expr. Qlik :** `{row.get('expr_qlik')}`")
+            if row.get("expr_pbi"):
+                st.write(f"**Expr. PBI :** `{row.get('expr_pbi')}`")
+            st.write(f"**Cause probable :** {row.get('cause_probable')}")
+            st.write(f"**Correction suggérée :** {row.get('correction')}")
+
+
+def build_qlik_expressions_text(qlik_result: dict) -> str:
+    """Rassemble toutes les expressions Qlik déjà extraites (mesures master,
+    KPIs, visuels) en un seul texte, pour la détection de patterns du Module B —
+    évite d'avoir à uploader un fichier d'expressions séparé."""
+    lines = []
+    for m in qlik_result.get("measures", []) or []:
+        if m.get("expression"):
+            lines.append(str(m["expression"]))
+    for k in qlik_result.get("kpis", []) or []:
+        if k.get("expression"):
+            lines.append(str(k["expression"]))
+    for v in qlik_result.get("visuals", []) or []:
+        if v.get("expression"):
+            lines.append(str(v["expression"]))
+    return "\n".join(lines)
+
+
+def export_module_a_excel(
+    rec_df: pd.DataFrame, qlik_result: dict, pbi_result: dict
+) -> bytes:
+    buf = io.BytesIO()
+    with pd.ExcelWriter(buf, engine="openpyxl") as writer:
+        if rec_df is not None and not rec_df.empty:
+            rec_df.to_excel(writer, sheet_name="Reconciliation_KPIs", index=False)
+        pd.DataFrame(qlik_result.get("kpis", [])).to_excel(
+            writer, sheet_name="Qlik_KPIs", index=False
+        )
+        pd.DataFrame(pbi_result.get("kpis", [])).to_excel(
+            writer, sheet_name="PBI_KPIs", index=False
+        )
+    return buf.getvalue()
+
+
+def section_heading(tag: str, title: str, lead: str = "") -> None:
+    st.markdown(
+        f"""
+        <div class="section-heading">
+            <h2>{title}</h2>
+            <span class="section-tag">{tag}</span>
+        </div>
+        {f'<div class="section-lead">{lead}</div>' if lead else ''}
+        """,
+        unsafe_allow_html=True,
+    )
+
 
 # ============================================================
-# ONGLETS
+# SESSION STATE
 # ============================================================
 
-tab_a, tab_b, tab_report, tab_eval = st.tabs([
-    "📊 Data Reconciliation",
-    "🔍 Functional Coverage",
-    "📄 Audit Report",
-    "🎯 Agent Evaluation"
-])
+for key, default in [
+    ("all_comparisons", {}),
+    ("findings", []),
+    ("module_b_coverage", None),
+    ("qlik_extraction", None),
+    ("pbi_extraction", None),
+    ("module_a_reconciliation", None),
+    ("active_section", "Réconciliation de données"),
+]:
+    if key not in st.session_state:
+        st.session_state[key] = default
 
 # ============================================================
-# TAB A — DATA RECONCILIATION
+# SIDEBAR NAVIGATION
 # ============================================================
 
-with tab_a:
-    st.markdown('<div class="card"><div class="card-header">📥 Import des exports</div>', unsafe_allow_html=True)
-    st.caption("Upload des fichiers Qlik et Power BI. L'agent associe automatiquement les paires par nom commun.")
+sections = [
+    "Réconciliation de données",
+    "Couverture fonctionnelle",
+    "Rapport d'audit",
+    "Évaluation de l'agent",
+]
+
+with st.sidebar:
+    st.markdown('<div class="side-brand">Navigation</div>', unsafe_allow_html=True)
+    active_section = st.radio(
+        "Navigation",
+        sections,
+        index=sections.index(st.session_state["active_section"]),
+        label_visibility="collapsed",
+    )
+    st.session_state["active_section"] = active_section
+
+    rec_df_side = st.session_state.get("module_a_reconciliation")
+    has_a_side = isinstance(rec_df_side, pd.DataFrame) and not rec_df_side.empty
+    has_b_side = bool(st.session_state.get("module_b_coverage"))
+    findings_side = st.session_state.get("findings") or []
+
+    st.markdown(
+        f"""
+        <div class="side-progress">
+            <div class="side-progress-title">État de l'audit</div>
+            <div class="side-progress-row">
+                <span class="label">Réconciliation</span>
+                <span class="chip {'chip-done' if has_a_side else 'chip-pending'}">
+                    {'Fait' if has_a_side else 'En attente'}
+                </span>
+            </div>
+            <div class="side-progress-row">
+                <span class="label">Couverture</span>
+                <span class="chip {'chip-done' if has_b_side else 'chip-pending'}">
+                    {'Fait' if has_b_side else 'En attente'}
+                </span>
+            </div>
+            <div class="side-progress-row">
+                <span class="label">Findings</span>
+                <span class="chip {'chip-done' if findings_side else 'chip-pending'}">
+                    {len(findings_side)}
+                </span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+# ============================================================
+# SECTION — RÉCONCILIATION DE DONNÉES (MODULE A)
+# ============================================================
+
+def render_module_a() -> None:
+    section_heading(
+        "Module A",
+        "Réconciliation de données",
+        "À partir des exports du rapport Qlik et de son équivalent Power BI, détecte les écarts "
+        "numériques (totaux, KPIs, dimensions), les localise, et suggère une cause probable et "
+        "une correction au consultant.",
+    )
+
+    st.markdown(
+        '<div class="card"><div class="card-header">Import des fichiers</div>',
+        unsafe_allow_html=True,
+    )
 
     col1, col2 = st.columns(2)
     with col1:
-        qlik_files = st.file_uploader(
-            "Exports Qlik Sense",
-            type=["csv", "xlsx"], accept_multiple_files=True, key="qlik_batch"
+        qlik_file = st.file_uploader(
+            "Rapport Qlik (.qvf)",
+            type=["qvf"],
+            key="qlik_main",
+            help="Qlik Sense Desktop doit être ouvert avec ce fichier chargé (Engine API).",
         )
     with col2:
-        pbi_files = st.file_uploader(
-            "Exports Power BI",
-            type=["csv", "xlsx"], accept_multiple_files=True, key="pbi_batch"
+        pbi_file = st.file_uploader(
+            "Rapport Power BI (.pbix)",
+            type=["pbix", "pbit"],
+            key="pbi_main",
+            help="Power BI Desktop doit être ouvert avec ce fichier chargé (extraction live ADOMD.NET).",
         )
 
-    if qlik_files and pbi_files:
-        qlik_map = {extract_base_name(f.name): f for f in qlik_files}
-        pbi_map = {extract_base_name(f.name): f for f in pbi_files}
-        all_base_names = sorted(set(qlik_map.keys()) | set(pbi_map.keys()))
+    st.caption(
+        f"Tolérance relative : {SEUIL_TOLERANCE:.0%}. Matching automatique par id, nom exact, "
+        "puis nom approchant (score affiché). Les valeurs sont lues directement dans les "
+        "moteurs Qlik / Power BI — aucune saisie manuelle requise."
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
 
-        st.markdown(f"**{len(all_base_names)} paire(s) détectée(s)**")
+    if qlik_file and pbi_file:
+        temp_dir = Path("data/temp")
+        temp_dir.mkdir(parents=True, exist_ok=True)
 
-        if st.button("🚀 Lancer les comparaisons", type="primary"):
-            st.session_state["all_comparisons"] = {}
-            st.session_state["missing_pbi"] = []
-            st.session_state["comparison_failures"] = []
+        if st.button("Extraire et réconcilier", type="primary"):
+            with st.spinner("Extraction Qlik + Power BI en cours..."):
+                try:
+                    # ----- QLIK -----
+                    st.markdown('<div class="card"><div class="card-header">Qlik Sense</div>', unsafe_allow_html=True)
+                    qlik_path = temp_dir / qlik_file.name
+                    qlik_path.write_bytes(qlik_file.getvalue())
 
-            for base_name in all_base_names:
-                qlik_f = qlik_map.get(base_name)
-                pbi_f = pbi_map.get(base_name)
+                    qlik_extractor = QlikExtractor()
+                    qlik_result = qlik_extractor.extract_from_file(str(qlik_path.resolve()))
+                    st.session_state["qlik_extraction"] = qlik_result
 
-                with st.expander(f"📄 {base_name}", expanded=True):
-                    if qlik_f is None:
-                        st.warning(f"⚠️ Fichier Qlik manquant pour '{base_name}'")
-                        continue
-                    if pbi_f is None:
-                        st.error(f"🔴 Fichier Power BI manquant pour '{base_name}'")
-                        st.session_state["missing_pbi"].append(base_name)
-                        continue
+                    q1, q2, q3, q4, q5 = st.columns(5)
+                    q1.metric("Sheets", len(qlik_result.get("sheets", [])))
+                    q2.metric("KPIs", len(qlik_result.get("kpis", [])))
+                    q3.metric("Visuels", len(qlik_result.get("visuals", [])))
+                    q4.metric("Mesures", len(qlik_result.get("measures", [])))
+                    q5.metric("Dimensions", len(qlik_result.get("dimensions", [])))
 
-                    try:
-                        qlik_df = load_uploaded_file(qlik_f)
-                        pbi_df = load_uploaded_file(pbi_f)
+                    with st.expander("Détail KPIs Qlik"):
+                        for k in qlik_result.get("kpis", []):
+                            st.write(
+                                f"- **[{k.get('sheet', '')}] {k.get('name', '')}** "
+                                f"= `{k.get('value')}` · id=`{k.get('id', '')}`"
+                            )
+                    st.markdown("</div>", unsafe_allow_html=True)
 
-                        is_single_value = len(qlik_df) == 1 and len(pbi_df) == 1
+                    # ----- PBI -----
+                    st.markdown('<div class="card"><div class="card-header">Power BI</div>', unsafe_allow_html=True)
+                    pbi_path = temp_dir / pbi_file.name
+                    pbi_path.write_bytes(pbi_file.getvalue())
 
-                        if is_single_value:
-                            _, value_col_qlik = guess_key_value_columns(qlik_df)
-                            _, value_col_pbi = guess_key_value_columns(pbi_df)
-                            if value_col_qlik is None or value_col_pbi is None:
-                                st.error("❌ Impossible de détecter une colonne de valeur.")
-                                continue
+                    pbi_extractor = PBIExtractor()
+                    pbi_result = pbi_extractor.extract_from_file(str(pbi_path.resolve()))
+                    st.session_state["pbi_extraction"] = pbi_result
 
-                            qlik_prepared = pd.DataFrame({"__key__": ["Total"], "__value__": [qlik_df[value_col_qlik].iloc[0]]})
-                            pbi_prepared = pd.DataFrame({"__key__": ["Total"], "__value__": [pbi_df[value_col_pbi].iloc[0]]})
-                            qlik_prepared["__value__"] = auto_clean_numeric(qlik_prepared["__value__"])
-                            pbi_prepared["__value__"] = auto_clean_numeric(pbi_prepared["__value__"])
+                    live = (pbi_result.get("metadata", {}) or {}).get("source", "")
+                    if "live" in live:
+                        st.success("Extraction live réussie (valeurs réelles des mesures DAX).")
+                    else:
+                        st.warning(
+                            "Power BI Desktop n'a pas pu être atteint — structure extraite du "
+                            "fichier, sans valeurs réelles. Ouvrez le .pbix dans Power BI Desktop "
+                            "et relancez pour des valeurs exactes."
+                        )
 
-                            result = compare_exports(qlik_prepared, pbi_prepared, key_cols=["__key__"], value_col="__value__")
-                            st.session_state["all_comparisons"][base_name] = result
-                            st.dataframe(style_comparison_df(result), use_container_width=True)
+                    p1, p2, p3, p4 = st.columns(4)
+                    p1.metric("Pages", len(pbi_result.get("pages", [])))
+                    p2.metric("Visuels", len(pbi_result.get("visuals", [])))
+                    p3.metric("KPIs / Mesures", len(pbi_result.get("kpis", [])))
+                    p4.metric("Mesures DAX", len(pbi_result.get("dax_measures", [])))
 
-                        else:
-                            key_col_qlik = guess_key_column(qlik_df)
-                            key_col_pbi = guess_key_column(pbi_df)
+                    with st.expander("Détail structure PBI"):
+                        if pbi_result.get("pages"):
+                            st.write(
+                                "**Pages :** "
+                                + ", ".join(str(p.get("name", "")) for p in pbi_result["pages"])
+                            )
+                        for k in pbi_result.get("kpis") or []:
+                            err = k.get("error")
+                            tag = " — ERREUR DAX" if err else ""
+                            st.markdown(f"- **{k.get('name')}** = `{k.get('value')}`{tag}")
+                            if err:
+                                st.caption(err)
+                    st.markdown("</div>", unsafe_allow_html=True)
 
-                            qlik_numeric_cols = get_numeric_columns(qlik_df, exclude=key_col_qlik)
-                            pbi_numeric_cols = get_numeric_columns(pbi_df, exclude=key_col_pbi)
+                    # ----- RÉCONCILIATION -----
+                    st.markdown('<div class="card"><div class="card-header">Réconciliation</div>', unsafe_allow_html=True)
+                    rec_df = reconcile_kpis(qlik_result, pbi_result)
+                    st.session_state["module_a_reconciliation"] = rec_df
+                    st.session_state["all_comparisons"]["kpis"] = rec_df
+                    st.session_state["findings"] = findings_from_reconciliation(rec_df)
 
-                            matched_pairs = match_numeric_columns(qlik_numeric_cols, pbi_numeric_cols)
+                    if rec_df is not None and not rec_df.empty:
+                        n_match = int((rec_df["statut"] == "MATCH_VALUE").sum())
+                        n_ecart = int((rec_df["statut"] == "ECART_VALEUR").sum())
+                        n_err = int((rec_df["statut"] == "ERREUR_PBI").sum())
+                        n_miss_p = int((rec_df["statut"] == "MANQUANT_PBI").sum())
+                        n_miss_q = int((rec_df["statut"] == "MANQUANT_QLIK").sum())
+                    else:
+                        n_match = n_ecart = n_err = n_miss_p = n_miss_q = 0
 
-                            if not matched_pairs and len(qlik_numeric_cols) == 1 and len(pbi_numeric_cols) == 1:
-                                matched_pairs = [(qlik_numeric_cols[0], pbi_numeric_cols[0])]
+                    m1, m2, m3, m4, m5 = st.columns(5)
+                    m1.metric("Match valeur", n_match)
+                    m2.metric("Écarts valeur", n_ecart)
+                    m3.metric("Mesures en erreur", n_err)
+                    m4.metric("Manquants PBI", n_miss_p)
+                    m5.metric("Manquants Qlik", n_miss_q)
 
-                            st.write(f"Clé: `{key_col_qlik}` ↔ `{key_col_pbi}`")
-                            st.write(f"Mesures: {', '.join(f'{q} ↔ {p}' for q, p in matched_pairs) or 'aucune'}")
+                    cols_show = [
+                        c
+                        for c in [
+                            "kpi", "kpi_pbi", "valeur_qlik", "valeur_pbi",
+                            "statut", "criticite", "match_type", "match_score",
+                        ]
+                        if rec_df is not None and c in rec_df.columns
+                    ]
+                    if rec_df is not None:
+                        st.dataframe(rec_df[cols_show], width="stretch")
+                    st.markdown("</div>", unsafe_allow_html=True)
 
-                            if not matched_pairs or key_col_qlik is None or key_col_pbi is None:
-                                st.warning("⚠️ Impossible d'associer les colonnes.")
-                                st.session_state["comparison_failures"].append({
-                                    "visuel": base_name,
-                                    "raison": f"Structure incompatible — colonnes Qlik: {list(qlik_df.columns)}, "
-                                              f"colonnes Power BI: {list(pbi_df.columns)}. "
-                                              f"Aucune correspondance de dimension/mesure fiable détectée automatiquement."
-                                })
-                                continue
+                    # ----- ÉCARTS STRUCTURELS -----
+                    if detect_structural_gaps is not None:
+                        structural_findings = detect_structural_gaps(qlik_result, pbi_result)
+                        st.session_state["structural_findings"] = structural_findings
+                        st.session_state["findings"] = st.session_state["findings"] + structural_findings
+                        if structural_findings:
+                            st.markdown(
+                                '<div class="card"><div class="card-header">Écarts structurels — visuels & dimensions</div>',
+                                unsafe_allow_html=True,
+                            )
+                            st.caption(
+                                "Détection complémentaire : dimensions Qlik sans colonne Power BI "
+                                "correspondante, pages avec moins de visuels que leur feuille Qlik source."
+                            )
+                            for f in structural_findings:
+                                with st.expander(f"{f['criticite']} — {f['libelle']}"):
+                                    st.write(f"**Détail :** {f['detail']}")
+                                    st.write(f"**Diagnostic :** {f['diagnostic']}")
+                                    st.write(f"**Recommandation :** {f['recommandation']}")
+                            st.markdown("</div>", unsafe_allow_html=True)
 
-                            for qcol, pcol in matched_pairs:
-                                qlik_prepared = qlik_df[[key_col_qlik, qcol]].rename(
-                                    columns={key_col_qlik: "__key__", qcol: "__value__"})
-                                pbi_prepared = pbi_df[[key_col_pbi, pcol]].rename(
-                                    columns={key_col_pbi: "__key__", pcol: "__value__"})
+                    # ----- ÉCARTS DÉTAILLÉS -----
+                    st.markdown(
+                        '<div class="card"><div class="card-header">Écarts, causes probables & corrections</div>',
+                        unsafe_allow_html=True,
+                    )
+                    show_ecarts_expanders(rec_df)
+                    st.markdown("</div>", unsafe_allow_html=True)
 
-                                qlik_prepared["__value__"] = auto_clean_numeric(qlik_prepared["__value__"])
-                                pbi_prepared["__value__"] = auto_clean_numeric(pbi_prepared["__value__"])
-                                qlik_prepared["__key__"] = qlik_prepared["__key__"].astype(str).str.strip()
-                                pbi_prepared["__key__"] = pbi_prepared["__key__"].astype(str).str.strip()
+                    st.download_button(
+                        "Télécharger le rapport Excel — Module A",
+                        data=export_module_a_excel(rec_df, qlik_result, pbi_result),
+                        file_name=f"module_a_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        key="dl_module_a",
+                    )
+                    st.success("Réconciliation Module A terminée.")
 
-                                result = compare_exports(qlik_prepared, pbi_prepared, key_cols=["__key__"], value_col="__value__")
-
-                                comparison_name = f"{base_name} [{qcol}]"
-                                st.session_state["all_comparisons"][comparison_name] = result
-
-                                st.markdown(f"**{qcol} ↔ {pcol}**")
-                                st.dataframe(style_comparison_df(result), use_container_width=True)
-
-                    except Exception as e:
-                        st.error(f"❌ Erreur: {e}")
-                        continue
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # Résumé des comparaisons
-    if st.session_state["all_comparisons"]:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown(f"**{len(st.session_state['all_comparisons'])} comparaison(s) enregistrée(s)**")
-        
-        if st.session_state["missing_pbi"]:
-            st.warning(f"🔴 Visuels sans équivalent PBI: {', '.join(st.session_state['missing_pbi'])}")
-
-        if st.session_state["comparison_failures"]:
-            st.error(f"⚠️ {len(st.session_state['comparison_failures'])} comparaison(s) échouée(s) — nécessite une vérification manuelle")
-            for cf in st.session_state["comparison_failures"]:
-                with st.expander(f"❌ {cf['visuel']}"):
-                    st.write(cf["raison"])
-
-        if st.button("🗑️ Effacer tout"):
-            st.session_state["all_comparisons"] = {}
-            st.session_state["missing_pbi"] = []
-            st.session_state["comparison_failures"] = []
-            st.rerun()
-
-        for nom, result in st.session_state["all_comparisons"].items():
-            ecarts = result[result["statut"] == "ECART_DETECTE"]
-            icone = "🔴" if len(ecarts) > 0 else "✅"
-            with st.expander(f"{icone} {nom} — {len(ecarts)} écart(s)"):
-                st.dataframe(style_comparison_df(result), use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-# ============================================================
-# TAB B — FUNCTIONAL COVERAGE
-# ============================================================
-
-with tab_b:
-    st.markdown('<div class="card"><div class="card-header">🔍 Analyse fonctionnelle</div>', unsafe_allow_html=True)
-
-    col1, col2 = st.columns(2)
-    with col1:
-        qlik_script_file = st.file_uploader("Script Qlik (.qvs)", type=["qvs", "txt"], key="qlik_script")
-    with col2:
-        qlik_expr_file = st.file_uploader("Expressions visuels (.txt)", type=["txt"], key="qlik_expr")
-
-    if qlik_script_file:
-        script_content = qlik_script_file.read().decode("utf-8")
-        expr_content = qlik_expr_file.read().decode("utf-8") if qlik_expr_file else ""
-
-        combined_content = script_content + "\n\n" + expr_content
-
-        temp_path = Path("data/samples/_temp_uploaded_script.qvs")
-        temp_path.parent.mkdir(parents=True, exist_ok=True)
-        temp_path.write_text(combined_content, encoding="utf-8")
-
-        patterns = parse_qlik_script(str(temp_path))
-
-        st.markdown(f"**{len(patterns)} pattern(s) détecté(s)**")
-        for p in patterns:
-            st.markdown(f"- **{p['pattern']}** → `{p['expression_source']}`")
-
-        dax_path = Path("data/samples/case_encadrante_01/powerbi/measures_dax.txt")
-        if dax_path.exists():
-            st.markdown("---")
-            st.markdown("**Mesures DAX disponibles**")
-            st.text_area("", dax_path.read_text(encoding="utf-8"), height=150)
-
-            if st.button("🧠 Lancer le mapping sémantique", type="primary"):
-                with st.spinner("Analyse en cours..."):
-                    mapping_results = map_all_patterns(patterns, str(dax_path))
-                st.session_state["module_b_mapping"] = mapping_results
-
-            if "module_b_mapping" in st.session_state:
-                st.markdown("---")
-                st.markdown("**Résultats du mapping**")
-                couleur_statut = {
-                    "COUVERT": "🟢", "PARTIELLEMENT_COUVERT": "🟠",
-                    "NON_COUVERT": "🔴", "ERREUR_PARSING": "⚪"
-                }
-                for r in st.session_state["module_b_mapping"]:
-                    icone = couleur_statut.get(r["statut"], "⚪")
-                    expr_display = r["expression_source"].replace("\n", " ").strip()
-                    if len(expr_display) > 50:
-                        expr_display = expr_display[:50] + "..."
-                    with st.expander(f"{icone} [{r['statut']}] {r['pattern']}"):
-                        st.write(f"**Expression:** `{r['expression_source']}`")
-                        st.write(f"**Mesure DAX:** {r.get('mesure_dax_correspondante') or 'Aucune'}")
-                        st.write(f"**Justification:** {r.get('justification')}")
-        else:
-            st.warning("Fichier measures_dax.txt introuvable.")
+                except Exception as e:
+                    st.error(f"Erreur d'extraction : {e}")
+                    st.code(traceback.format_exc())
     else:
-        st.info("Importez le script Qlik pour commencer l'analyse.")
+        st.markdown(
+            '<div class="callout">Uploadez un fichier <strong>.qvf</strong> et un fichier '
+            '<strong>.pbix</strong> pour lancer la réconciliation.</div>',
+            unsafe_allow_html=True,
+        )
 
-    st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================================
-# TAB C — AUDIT REPORT
+# SECTION — COUVERTURE FONCTIONNELLE (MODULE B)
 # ============================================================
 
-with tab_report:
+def render_module_b() -> None:
+    section_heading(
+        "Module B",
+        "Couverture fonctionnelle",
+        "Script et expressions Qlik comparés aux mesures DAX pour repérer les fonctionnalités "
+        "source sans équivalent migré.",
+    )
+
+    st.markdown(
+        '<div class="card"><div class="card-header">Analyse fonctionnelle</div>',
+        unsafe_allow_html=True,
+    )
+
+    qlik_live = st.session_state.get("qlik_extraction")
+    pbi_live = st.session_state.get("pbi_extraction")
+    has_live = bool(qlik_live) and bool(pbi_live)
+
+    source = st.radio(
+        "Source des données",
+        ["Extraction du Module A (recommandé)", "Uploader des fichiers manuellement"],
+        index=0 if has_live else 1,
+        horizontal=True,
+    )
+
+    qlik_content = expr_content = dax_content = None
+    dax_measures_struct = None
+
+    if source.startswith("Extraction"):
+        if not has_live:
+            st.warning(
+                "Aucune extraction Module A en mémoire. Lancez d'abord la section "
+                "**Réconciliation de données** (avec Qlik Sense Desktop et Power BI Desktop "
+                "ouverts), ou basculez sur l'upload manuel ci-dessus."
+            )
+        else:
+            qlik_content = qlik_live.get("script", "") or ""
+            expr_content = build_qlik_expressions_text(qlik_live)
+            dax_measures_struct = pbi_live.get("dax_measures", []) or []
+            n_script_lines = len(qlik_content.splitlines())
+            st.caption(
+                f"Script Qlik : {n_script_lines} ligne(s) · "
+                f"Expressions Qlik : {expr_content.count(chr(10)) + (1 if expr_content else 0)} · "
+                f"Mesures DAX (PBI) : {len(dax_measures_struct)}"
+            )
+            if not qlik_content.strip():
+                st.info(
+                    "Le script Qlik récupéré est vide — vérifiez que l'app Qlik contient bien "
+                    "un script de chargement, ou uploadez-le manuellement."
+                )
+    else:
+        b1, b2 = st.columns(2)
+        with b1:
+            qlik_script_file = st.file_uploader("Script Qlik (.qvs)", type=["qvs", "txt"], key="qlik_script")
+        with b2:
+            qlik_expr_file = st.file_uploader("Expressions visuels (.txt)", type=["txt"], key="qlik_expr")
+        dax_measures_file = st.file_uploader(
+            "Mesures DAX (.txt / .dax, format '# Mesure : Nom')", type=["txt", "dax"], key="dax_measures"
+        )
+        if qlik_script_file:
+            qlik_content = qlik_script_file.read().decode("utf-8")
+        if qlik_expr_file:
+            expr_content = qlik_expr_file.read().decode("utf-8")
+        if dax_measures_file:
+            dax_content = dax_measures_file.read().decode("utf-8")
+
+    if st.button("Lancer l'analyse de couverture", type="primary"):
+        if analyze_coverage_quick is None:
+            st.error("Module B (coverage_analyzer) non disponible.")
+        elif not qlik_content:
+            st.warning("Aucun script Qlik disponible (extraction live vide ou fichier non uploadé).")
+        elif dax_measures_struct is None and not dax_content:
+            st.warning("Aucune mesure DAX disponible (extraction live absente ou fichier non uploadé).")
+        else:
+            with st.spinner("Analyse de couverture en cours..."):
+                try:
+                    measures_for_analysis = (
+                        dax_measures_struct
+                        if dax_measures_struct is not None
+                        else parse_dax_measures_text(dax_content)
+                    )
+                    results = analyze_coverage_quick(qlik_content, expr_content or "", measures_for_analysis)
+                    if results.get("error"):
+                        st.error(results["error"])
+                    else:
+                        st.session_state["module_b_coverage"] = results
+                        k1, k2, k3, k4, k5 = st.columns(5)
+                        k1.metric("Patterns", results.get("total_patterns", 0))
+                        k2.metric("Couverts", results.get("covered", 0))
+                        k3.metric("Partiels", results.get("partially_covered", 0))
+                        k4.metric("Non couverts", results.get("not_covered", 0))
+                        k5.metric("Taux", f"{results.get('coverage_rate', 0):.1f}%")
+                        if results.get("details"):
+                            st.dataframe(pd.DataFrame(results["details"]), width="stretch")
+                        if results.get("findings"):
+                            existing = st.session_state.get("findings") or []
+                            st.session_state["findings"] = existing + results["findings"]
+                        if results.get("recommandations"):
+                            with st.expander("Recommandations"):
+                                for rec in results["recommandations"]:
+                                    st.markdown(f"- {rec}")
+                        st.success("Analyse Module B terminée.")
+                except Exception as e:
+                    st.error(str(e))
+                    st.code(traceback.format_exc())
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+# ============================================================
+# SECTION — RAPPORT D'AUDIT
+# ============================================================
+
+def render_report() -> None:
+    section_heading(
+        "Synthèse",
+        "Rapport d'audit",
+        "Fusionne les findings des modules A et B, les trie par criticité, et génère les "
+        "exports destinés au consultant et au client.",
+    )
+
     st.markdown('<div class="card">', unsafe_allow_html=True)
 
-    nb_comparisons = len(st.session_state["all_comparisons"])
-    nb_missing = len(st.session_state["missing_pbi"])
-    has_b = "module_b_mapping" in st.session_state
+    rec_df = st.session_state.get("module_a_reconciliation")
+    has_a = isinstance(rec_df, pd.DataFrame) and not rec_df.empty
+    has_b = bool(st.session_state.get("module_b_coverage"))
+    findings = st.session_state.get("findings") or []
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Comparaisons", nb_comparisons)
-    col2.metric("Visuels manquants", nb_missing)
-    col3.metric("Module B", "✅ Activé" if has_b else "⏳ En attente")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Module A", "Fait" if has_a else "En attente")
+    c2.metric("Module B", "Fait" if has_b else "En attente")
+    c3.metric("Findings", len(findings))
 
-    if st.button("📄 Générer le rapport d'audit", type="primary",
-                 disabled=(nb_comparisons == 0 and nb_missing == 0 and not has_b)):
+    if st.button(
+        "Générer / rafraîchir le rapport",
+        type="primary",
+        disabled=not (has_a or has_b),
+    ):
+        findings_a = findings_from_reconciliation(rec_df) if has_a else []
+        findings_a = findings_a + (st.session_state.get("structural_findings") or [])
+        findings_b = st.session_state["module_b_coverage"].get("findings") or [] if has_b else []
+        if orchestrator_merge_findings is not None:
+            merged_typed = orchestrator_merge_findings(findings_a, findings_b)
+            merged = [
+                {
+                    "source_module": f.source_module,
+                    "libelle": f.libelle,
+                    "detail": f.detail,
+                    "criticite": f.criticite,
+                    "diagnostic": f.diagnostic,
+                    "recommandation": f.recommandation,
+                    "statut": f.statut,
+                }
+                for f in merged_typed
+            ]
+        else:
+            merged = findings_a + findings_b
+        st.session_state["findings"] = merged
+        findings = merged
+        st.success(f"Rapport généré : {len(findings)} finding(s).")
 
-        with st.spinner("Exécution du graphe multi-agents (Module A → Module B → Orchestrateur)..."):
-            graph_app = build_reconciliation_graph()
+    st.markdown("</div>", unsafe_allow_html=True)
 
-            initial_state = {
-                "all_comparisons": st.session_state["all_comparisons"],
-                "missing_pbi": st.session_state["missing_pbi"],
-                "comparison_failures": st.session_state.get("comparison_failures", []),
-                "qlik_patterns": [],
-                "mapping_results": st.session_state.get("module_b_mapping", []),
-                "dax_measures_path": "",
-            }
+    if findings:
+        if generate_executive_summary is not None:
+            from orchestrator.merge_advanced import Finding as _FindingSummary
+            findings_typed_summary = [
+                _FindingSummary(
+                    source_module=f.get("source_module", ""),
+                    libelle=f.get("libelle", ""),
+                    detail=f.get("detail", ""),
+                    criticite=f.get("criticite", "MINEUR"),
+                    diagnostic=f.get("diagnostic", ""),
+                    recommandation=f.get("recommandation", ""),
+                    statut=f.get("statut", ""),
+                )
+                for f in findings
+            ]
+            st.markdown('<div class="card"><div class="card-header">Résumé exécutif</div>', unsafe_allow_html=True)
+            st.markdown(generate_executive_summary(findings_typed_summary))
+            st.markdown("</div>", unsafe_allow_html=True)
 
-            result_state = graph_app.invoke(initial_state)
+        bloquant = sum(1 for f in findings if f.get("criticite") == "BLOQUANT")
+        majeur = sum(1 for f in findings if f.get("criticite") == "MAJEUR")
+        mineur = sum(1 for f in findings if f.get("criticite") == "MINEUR")
+        st.markdown(
+            render_kpi_grid({"bloquant": bloquant, "majeur": majeur, "mineur": mineur, "ok": 0}),
+            unsafe_allow_html=True,
+        )
 
-        st.session_state["findings"] = result_state["findings"]
+        st.markdown('<div class="card"><div class="card-header">Détail des findings</div>', unsafe_allow_html=True)
+        for f in findings:
+            with st.expander(f"{f.get('criticite', 'MINEUR')} — {f.get('libelle', '')}"):
+                st.write(f"**Module :** {f.get('source_module', '')}")
+                st.write(f"**Détail :** {f.get('detail', '')}")
+                st.write(f"**Diagnostic :** {f.get('diagnostic', '')}")
+                if f.get("recommandation"):
+                    st.write(f"**Recommandation :** {f.get('recommandation')}")
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    if "findings" in st.session_state:
-        prioritized = st.session_state["findings"]
-
-        # Résumé exécutif
-        if "executive_summary" not in st.session_state or st.button("🔄 Régénérer"):
-            with st.spinner("Rédaction du résumé..."):
-                st.session_state["executive_summary"] = generate_executive_summary(prioritized)
-
-        st.markdown("### 📝 Résumé exécutif")
-        st.info(st.session_state["executive_summary"])
-
-        # KPI Grid
-        stats = {
-            "bloquant": sum(1 for f in prioritized if f["criticite"] == "BLOQUANT"),
-            "majeur": sum(1 for f in prioritized if f["criticite"] == "MAJEUR"),
-            "mineur": sum(1 for f in prioritized if f["criticite"] == "MINEUR"),
-            "couvert": sum(1 for f in prioritized if f.get("statut") == "COUVERT")
+        report_data = {
+            "date": datetime.datetime.now().isoformat(),
+            "reference": ref,
+            "total_findings": len(findings),
+            "bloquant": bloquant,
+            "majeur": majeur,
+            "mineur": mineur,
+            "findings": findings,
         }
-        st.markdown(render_kpi_grid(stats), unsafe_allow_html=True)
 
-        # Findings détaillés
-        if prioritized:
-            st.markdown("### 🔍 Détail des findings")
-            for f in prioritized:
-                st.markdown(render_badge(f['criticite']) + f" **{f['libelle']}**", unsafe_allow_html=True)
-                with st.expander("Voir le détail"):
-                    st.write(f"**Module:** {f['source_module']}")
-                    st.write(f"**Détail:** {f['detail']}")
-                    st.write(f"**Diagnostic:** {f['diagnostic']}")
-
-            # Export
-            rapport_texte = "\n\n".join(
-                f"## [{f['criticite']}] {f['libelle']}\n"
-                f"- **Module:** {f['source_module']}\n"
-                f"- **Détail:** {f['detail']}\n"
-                f"- **Diagnostic:** {f['diagnostic']}"
-                for f in prioritized
-            )
+        st.markdown('<div class="card"><div class="card-header">Exports</div>', unsafe_allow_html=True)
+        e1, e2, e3 = st.columns(3)
+        with e1:
             st.download_button(
-                "⬇️ Télécharger le rapport",
-                data=f"# Audit Report — Qlik → Power BI\n\n{rapport_texte}",
-                file_name=f"audit_report_{datetime.date.today().isoformat()}.md",
-                mime="text/markdown"
+                "Export JSON",
+                data=json.dumps(report_data, indent=2, ensure_ascii=False),
+                file_name=f"audit_report_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.json",
+                mime="application/json",
+                key="dl_audit_json",
+                width="stretch",
             )
 
-    st.markdown('</div>', unsafe_allow_html=True)
+        if orchestrator_generate_report is not None:
+            from orchestrator.merge_advanced import Finding as _Finding
+            findings_typed = [
+                _Finding(
+                    source_module=f.get("source_module", ""),
+                    libelle=f.get("libelle", ""),
+                    detail=f.get("detail", ""),
+                    criticite=f.get("criticite", "MINEUR"),
+                    diagnostic=f.get("diagnostic", ""),
+                    recommandation=f.get("recommandation", ""),
+                    statut=f.get("statut", ""),
+                )
+                for f in findings
+            ]
+            markdown_report = orchestrator_generate_report(findings_typed)
+            with e2:
+                st.download_button(
+                    "Export Markdown",
+                    data=markdown_report,
+                    file_name=f"audit_report_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.md",
+                    mime="text/markdown",
+                    key="dl_audit_md",
+                    width="stretch",
+                )
 
-# ============================================================
-# TAB D — AGENT EVALUATION
-# ============================================================
-
-with tab_eval:
-    st.markdown('<div class="card"><div class="card-header">🎯 Évaluation de l\'agent</div>', unsafe_allow_html=True)
-    st.caption("Validation du mapping sémantique sur des cas labellisés")
-
-    labeled_cases_path = Path("eval/labeled_cases.json")
-
-    if not labeled_cases_path.exists():
-        st.warning("Fichier eval/labeled_cases.json introuvable.")
+        if has_a:
+            qlik_result = st.session_state.get("qlik_extraction") or {}
+            pbi_result = st.session_state.get("pbi_extraction") or {}
+            with e3:
+                st.download_button(
+                    "Export Excel",
+                    data=export_module_a_excel(rec_df, qlik_result, pbi_result),
+                    file_name=f"audit_report_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    key="dl_audit_xlsx",
+                    width="stretch",
+                )
+        st.markdown("</div>", unsafe_allow_html=True)
     else:
-        labeled_cases = json.loads(labeled_cases_path.read_text(encoding="utf-8"))
-        st.markdown(f"**{len(labeled_cases)} cas labellisés** disponibles")
+        st.markdown(
+            '<div class="callout">Lancez le Module A et/ou le Module B pour alimenter le rapport.</div>',
+            unsafe_allow_html=True,
+        )
 
-        with st.expander("👁️ Voir les cas de test"):
-            for case in labeled_cases:
-                st.markdown(f"**{case['pattern']}** → `{case['expression_source']}`")
-                st.write(f"Vérité terrain: **{case['verite_terrain']}**")
-                st.caption(case["justification_humaine"])
-                st.divider()
 
-        n_runs = st.slider("Exécutions par cas", 1, 5, 3)
+# ============================================================
+# SECTION — ÉVALUATION DE L'AGENT
+# ============================================================
 
-        dax_path = Path("data/samples/case_encadrante_01/powerbi/measures_dax.txt")
+def render_eval() -> None:
+    section_heading(
+        "Qualité",
+        "Évaluation de l'agent",
+        "Mesure la fiabilité du LLM : accord avec un moteur de règles déterministe, ou "
+        "comparaison à une vérité terrain labellisée.",
+    )
 
-        if not dax_path.exists():
-            st.warning("Fichier measures_dax.txt introuvable.")
-        elif st.button("🎯 Lancer l'évaluation", type="primary"):
-            dax_text = dax_path.read_text(encoding="utf-8")
+    st.markdown('<div class="card">', unsafe_allow_html=True)
 
-            progress = st.progress(0)
-            status_text = st.empty()
-            results = []
+    eval_mode = st.radio(
+        "Mode d'évaluation",
+        [
+            "Automatique — accord LLM vs moteur par règles (sans fichier)",
+            "Manuel — comparaison à une vérité terrain labellisée",
+        ],
+        index=0,
+        horizontal=False,
+    )
 
-            total_calls = len(labeled_cases) * n_runs
-            call_count = 0
+    if eval_mode.startswith("Automatique"):
+        st.caption(
+            "Compare les verdicts du LLM à ceux du moteur par règles déterministe "
+            "(coverage_analyzer.py) sur les mêmes patterns, plus la stabilité du LLM sur "
+            "plusieurs exécutions. Aucun fichier requis — utilise l'extraction déjà faite "
+            "dans la section Réconciliation de données."
+        )
+        qlik_live = st.session_state.get("qlik_extraction")
+        pbi_live = st.session_state.get("pbi_extraction")
+        if not (qlik_live and pbi_live):
+            st.warning(
+                "Aucune extraction en mémoire. Lancez d'abord la section Réconciliation de "
+                "données (Qlik Sense Desktop + Power BI Desktop ouverts)."
+            )
+        elif auto_evaluate_against_rules is None:
+            st.error("Fonction d'auto-évaluation indisponible (import échoué).")
+        else:
+            n_runs_auto = st.slider("Exécutions par pattern", 1, 5, 3, key="n_runs_auto")
+            if st.button("Lancer l'auto-évaluation", type="primary"):
+                with st.spinner("Auto-évaluation en cours (peut prendre plusieurs minutes)..."):
+                    script_txt = qlik_live.get("script", "") or ""
+                    expr_txt = build_qlik_expressions_text(qlik_live)
+                    dax_measures_live = pbi_live.get("dax_measures", []) or []
+                    result = auto_evaluate_against_rules(
+                        script_txt, expr_txt, dax_measures_live, n_runs=n_runs_auto
+                    )
+                    if result.get("error"):
+                        st.error(result["error"])
+                    else:
+                        st.session_state["auto_eval_results"] = result
 
-            for case in labeled_cases:
-                pattern = {"pattern": case["pattern"], "expression_source": case["expression_source"]}
-                predictions = []
+            if "auto_eval_results" in st.session_state:
+                r = st.session_state["auto_eval_results"]
+                e1, e2, e3 = st.columns(3)
+                e1.metric("Taux d'accord (vs règles)", f"{r['taux_accord']:.1f}%")
+                e2.metric("Stabilité LLM", f"{r['taux_stabilite']:.1f}%")
+                e3.metric("Patterns testés", r["total_patterns"])
+                for d in r["details"]:
+                    tag = "Accord" if d["accord"] else "Désaccord"
+                    stab_tag = "Stable" if d["stable"] else "Instable"
+                    with st.expander(f"{tag} · {stab_tag} — {d['pattern']}"):
+                        st.write(f"**Expression :** `{d['expression']}`")
+                        st.write(f"**Référence (règles) :** {d['reference_regles']}")
+                        st.write(f"**Verdict LLM (majoritaire) :** {d['verdict_llm_majoritaire']}")
+                        st.write(f"**Prédictions LLM ({r['n_runs']} runs) :** {d['predictions_llm']}")
+    else:
+        st.caption("Validation du mapping sémantique sur des cas labellisés.")
+        st.caption(
+            "Ce banc de test compare les réponses du LLM à une vérité terrain déjà validée à "
+            "la main. Pour évaluer un autre projet, uploadez son propre fichier de cas "
+            "labellisés (même format que eval/labeled_cases.json) — il n'existe pas de vérité "
+            "terrain automatique."
+        )
+        labeled_cases_upload = st.file_uploader(
+            "Cas labellisés (.json) — optionnel, sinon eval/labeled_cases.json est utilisé",
+            type=["json"], key="labeled_cases_upload",
+        )
 
-                for run_idx in range(n_runs):
-                    status_text.text(f"Analyse: {case['pattern']} ({run_idx + 1}/{n_runs})...")
-                    agent_result = map_pattern_to_dax_eval(pattern, dax_text)
-                    predictions.append(agent_result["statut"])
-                    call_count += 1
-                    progress.progress(call_count / total_calls)
+        labeled_cases_path = Path("eval/labeled_cases.json")
+        if labeled_cases_upload is not None:
+            labeled_cases = json.loads(labeled_cases_upload.read().decode("utf-8"))
+        elif not labeled_cases_path.exists():
+            labeled_cases = None
+            st.warning("Fichier eval/labeled_cases.json introuvable — uploadez un fichier de cas labellisés.")
+        else:
+            labeled_cases = json.loads(labeled_cases_path.read_text(encoding="utf-8"))
 
-                most_common = max(set(predictions), key=predictions.count)
-                is_correct = most_common == case["verite_terrain"]
-                is_stable = len(set(predictions)) == 1
+        if labeled_cases is None:
+            pass
+        elif map_pattern_to_dax_eval is None:
+            st.warning("Fonction map_pattern_to_dax indisponible.")
+        else:
+            st.markdown(f"**{len(labeled_cases)} cas labellisés**")
 
-                results.append({
-                    "pattern": case["pattern"],
-                    "expression": case["expression_source"],
-                    "verite_terrain": case["verite_terrain"],
-                    "predictions": predictions,
-                    "verdict_majoritaire": most_common,
-                    "correct": is_correct,
-                    "stable": is_stable
-                })
+            with st.expander("Voir les cas de test"):
+                for case in labeled_cases:
+                    st.markdown(f"**{case.get('pattern')}** → `{case.get('expression_source')}`")
+                    st.write(f"Vérité terrain : **{case.get('verite_terrain')}**")
+                    st.caption(case.get("justification_humaine", ""))
+                    st.divider()
 
-            status_text.empty()
-            progress.empty()
+            n_runs = st.slider("Exécutions par cas", 1, 5, 3)
+            dax_path = st.text_input(
+                "Chemin fichier mesures DAX",
+                value="data/samples/case_encadrante_01/powerbi/measures_dax.txt",
+            )
 
-            accuracy = sum(1 for r in results if r["correct"]) / len(results)
-            stability = sum(1 for r in results if r["stable"]) / len(results)
+            if st.button("Lancer l'évaluation", type="primary"):
+                dax_file = Path(dax_path)
+                if not dax_file.exists():
+                    st.error(f"Fichier introuvable : {dax_path}")
+                else:
+                    dax_text = dax_file.read_text(encoding="utf-8")
+                    progress = st.progress(0)
+                    status = st.empty()
+                    results = []
+                    total = max(len(labeled_cases) * n_runs, 1)
+                    count = 0
+                    for case in labeled_cases:
+                        pattern = {
+                            "pattern": case["pattern"],
+                            "expression_source": case["expression_source"],
+                        }
+                        preds = []
+                        for run_idx in range(n_runs):
+                            status.text(f"{case['pattern']} ({run_idx + 1}/{n_runs})...")
+                            agent_result = map_pattern_to_dax_eval(pattern, dax_text)
+                            preds.append(agent_result.get("statut"))
+                            count += 1
+                            progress.progress(count / total)
+                        most = max(set(preds), key=preds.count)
+                        results.append(
+                            {
+                                "pattern": case["pattern"],
+                                "expression": case["expression_source"],
+                                "verite_terrain": case["verite_terrain"],
+                                "predictions": preds,
+                                "verdict_majoritaire": most,
+                                "correct": most == case["verite_terrain"],
+                                "stable": len(set(preds)) == 1,
+                            }
+                        )
+                    status.empty()
+                    progress.empty()
+                    acc = sum(1 for r in results if r["correct"]) / len(results)
+                    stab = sum(1 for r in results if r["stable"]) / len(results)
+                    st.session_state["eval_results"] = {
+                        "accuracy": acc,
+                        "stability": stab,
+                        "details": results,
+                    }
 
-            st.session_state["eval_results"] = {"accuracy": accuracy, "stability": stability, "details": results}
+            if "eval_results" in st.session_state:
+                report = st.session_state["eval_results"]
+                e1, e2 = st.columns(2)
+                e1.metric("Précision", f"{report['accuracy']:.0%}")
+                e2.metric("Stabilité", f"{report['stability']:.0%}")
+                for r in report["details"]:
+                    tag = "Correct" if r["correct"] else "Incorrect"
+                    with st.expander(f"{tag} — {r['pattern']}"):
+                        st.write(f"**Attendu :** {r['verite_terrain']}")
+                        st.write(f"**Verdict :** {r['verdict_majoritaire']}")
+                        st.write(f"**Prédictions :** {r['predictions']}")
 
-        if "eval_results" in st.session_state:
-            report = st.session_state["eval_results"]
+    st.markdown("</div>", unsafe_allow_html=True)
 
-            st.markdown(render_kpi_grid({
-                "bloquant": int((1 - report["accuracy"]) * 100),
-                "majeur": int((1 - report["stability"]) * 100),
-                "mineur": 0,
-                "couvert": int(report["accuracy"] * 100)
-            }), unsafe_allow_html=True)
 
-            col1, col2 = st.columns(2)
-            col1.metric("🎯 Précision", f"{report['accuracy']:.0%}")
-            col2.metric("🔄 Stabilité", f"{report['stability']:.0%}")
+# ============================================================
+# ROUTAGE — UNE SEULE SECTION AFFICHÉE À LA FOIS
+# ============================================================
 
-            st.markdown("---")
-            st.markdown("**Détail par cas**")
-
-            for r in report["details"]:
-                status_icon = "✅" if r["correct"] else "❌"
-                stable_icon = "🟢" if r["stable"] else "🔴"
-                with st.expander(f"{status_icon} {r['pattern']} — {stable_icon}"):
-                    st.write(f"**Expression:** `{r['expression']}`")
-                    st.write(f"**Attendu:** {r['verite_terrain']}")
-                    st.write(f"**Verdict:** {r['verdict_majoritaire']}")
-                    st.write(f"**Exécutions:** {r['predictions']}")
-
-    st.markdown('</div>', unsafe_allow_html=True)
+router = {
+    "Réconciliation de données": render_module_a,
+    "Couverture fonctionnelle": render_module_b,
+    "Rapport d'audit": render_report,
+    "Évaluation de l'agent": render_eval,
+}
+router[st.session_state["active_section"]]()
 
 # ============================================================
 # FOOTER
 # ============================================================
 
-st.markdown(f"""
+st.markdown(
+    f"""
 <div class="footer">
-    Migration Quality Audit · Qlik Sense → Power BI · {datetime.date.today().year}
-    <br>Document confidentiel — Usage interne
+  Migration Quality Audit · Qlik Sense → Power BI · {datetime.date.today().year}
+  <br>Document confidentiel — Usage interne
 </div>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)

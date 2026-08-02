@@ -1,0 +1,7 @@
+﻿Nombre de Order ID,Somme de Month,Somme de Margin,Customer ID,Nombre de Channel ID,Product ID,Somme de Quantity,Region,Somme de Sales Amount,Somme de Year
+2,2,250,C1,2,P1,5,North,1600,4049
+1,2,300,C1,1,P3,5,East,1500,2025
+1,2,500,C4,1,P3,4,East,1000,2024
+1,1,150,C2,1,P2,2,South,800,2025
+1,4,25,C2,1,P2,1,West,350,2024
+1,2,100,C3,1,P1,1,West,600,2025

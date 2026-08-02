@@ -1,0 +1,455 @@
+{
+  "generated_utc": "2026-07-01T14:18:48.326311+00:00",
+  "job_id": "qlik_20260701T135025Z_d71460df",
+  "app": {
+    "name": "sales_demo",
+    "qvf_path": "/app/output/qlik_jobs/qlik_20260701T135025Z_d71460df/upload/sales_demo.qvf",
+    "last_reload": "2026-06-15T14:29:23.780Z",
+    "sheet_count": 3,
+    "visual_count": 25,
+    "master_measure_count": 1,
+    "master_dimension_count": 2,
+    "variable_count": 4
+  },
+  "summary": {
+    "total_elements": 50,
+    "migrated": 44,
+    "needs_review": 6,
+    "not_migrated": 0,
+    "auto_migration_rate": "88%",
+    "plan_elements": 49
+  },
+  "by_agent": {
+    "data_model": {
+      "total": 9,
+      "migrated": 8,
+      "needs_review": 1,
+      "not_migrated": 0
+    },
+    "measure": {
+      "total": 13,
+      "migrated": 11,
+      "needs_review": 2,
+      "not_migrated": 0
+    },
+    "power_query": {
+      "total": 4,
+      "migrated": 2,
+      "needs_review": 2,
+      "not_migrated": 0
+    },
+    "visual": {
+      "total": 24,
+      "migrated": 23,
+      "needs_review": 1,
+      "not_migrated": 0
+    }
+  },
+  "elements": {
+    "migrated": [
+      {
+        "id": "tbl__Measures",
+        "agent": "data_model",
+        "status": "migrated",
+        "confidence": 1.0,
+        "review_reason": "",
+        "source_name": "_Measures"
+      },
+      {
+        "id": "tbl_sales",
+        "agent": "data_model",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Sales"
+      },
+      {
+        "id": "tbl_customers",
+        "agent": "data_model",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Customers"
+      },
+      {
+        "id": "tbl_products",
+        "agent": "data_model",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Products"
+      },
+      {
+        "id": "rel_sales_customers_customerid",
+        "agent": "data_model",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "rel_sales_customers_customerid"
+      },
+      {
+        "id": "rel_sales_products_productid",
+        "agent": "data_model",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "rel_sales_products_productid"
+      },
+      {
+        "id": "rel_sales_saleschannels_channelid",
+        "agent": "data_model",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "rel_sales_saleschannels_channelid"
+      },
+      {
+        "id": "rel_salesagg_customers_customerid",
+        "agent": "data_model",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "rel_salesagg_customers_customerid"
+      },
+      {
+        "id": "kpi_total_sales",
+        "agent": "measure",
+        "status": "migrated",
+        "confidence": 1.0,
+        "review_reason": "",
+        "source_name": "Total Sales"
+      },
+      {
+        "id": "kpi_selected_metric_value",
+        "agent": "measure",
+        "status": "migrated",
+        "confidence": 1.0,
+        "review_reason": "",
+        "source_name": "Selected Metric Value"
+      },
+      {
+        "id": "kpi_previous_year_sales",
+        "agent": "measure",
+        "status": "migrated",
+        "confidence": 1.0,
+        "review_reason": "",
+        "source_name": "Previous Year Sales"
+      },
+      {
+        "id": "kpi_sales_yoy_growth",
+        "agent": "measure",
+        "status": "migrated",
+        "confidence": 1.0,
+        "review_reason": "",
+        "source_name": "Sales Year Over Year Growth"
+      },
+      {
+        "id": "kpi_current_year_sales",
+        "agent": "measure",
+        "status": "migrated",
+        "confidence": 1.0,
+        "review_reason": "",
+        "source_name": "Current Year Sales"
+      },
+      {
+        "id": "kpi_average_margin",
+        "agent": "measure",
+        "status": "migrated",
+        "confidence": 1.0,
+        "review_reason": "",
+        "source_name": "Average Margin"
+      },
+      {
+        "id": "kpi_total_orders",
+        "agent": "measure",
+        "status": "migrated",
+        "confidence": 1.0,
+        "review_reason": "",
+        "source_name": "Total Orders"
+      },
+      {
+        "id": "kpi_year_to_date_sales",
+        "agent": "measure",
+        "status": "migrated",
+        "confidence": 1.0,
+        "review_reason": "",
+        "source_name": "Year To Date Sales"
+      },
+      {
+        "id": "kpi_distinct_customer_count",
+        "agent": "measure",
+        "status": "migrated",
+        "confidence": 1.0,
+        "review_reason": "",
+        "source_name": "Distinct Customer Count"
+      },
+      {
+        "id": "kpi_sales_excluding_north_region",
+        "agent": "measure",
+        "status": "migrated",
+        "confidence": 1.0,
+        "review_reason": "",
+        "source_name": "Sales Excluding North Region"
+      },
+      {
+        "id": "kpi_average_sales_per_customer",
+        "agent": "measure",
+        "status": "migrated",
+        "confidence": 1.0,
+        "review_reason": "",
+        "source_name": "Average Sales Per Customer"
+      },
+      {
+        "id": "pq_sales",
+        "agent": "power_query",
+        "status": "migrated",
+        "confidence": 1.0,
+        "review_reason": "",
+        "source_name": "Sales"
+      },
+      {
+        "id": "pq_products",
+        "agent": "power_query",
+        "status": "migrated",
+        "confidence": 1.0,
+        "review_reason": "",
+        "source_name": "Products"
+      },
+      {
+        "id": "fp_dimension_selector_XRvpz",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Sales by Product Dimension Selector"
+      },
+      {
+        "id": "qrEMJ",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Sales by Product"
+      },
+      {
+        "id": "EsbcAzT",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Evolution Y vs Y-1"
+      },
+      {
+        "id": "PAMjnV",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Sales by channel"
+      },
+      {
+        "id": "HSDwJeV",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Total Sales"
+      },
+      {
+        "id": "dTQJ",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Current Year Sales"
+      },
+      {
+        "id": "mPSaEm",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Sales by Region"
+      },
+      {
+        "id": "mpGZEY",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Monthly Trend"
+      },
+      {
+        "id": "HZejzW",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Product Performance"
+      },
+      {
+        "id": "mAk",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Max Year Sales"
+      },
+      {
+        "id": "LfPAmB",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Max Year Sales"
+      },
+      {
+        "id": "nGPLCJ",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Previous Year"
+      },
+      {
+        "id": "JqmHry",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "YTD"
+      },
+      {
+        "id": "ESdjMGc",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Distinct Customers"
+      },
+      {
+        "id": "AcFzzN",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Sales by Region"
+      },
+      {
+        "id": "XRvpz",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Sales by Product"
+      },
+      {
+        "id": "BFrxVB",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Measure 1"
+      },
+      {
+        "id": "RcJmws",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Total Sales"
+      },
+      {
+        "id": "t",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Avg Sales"
+      },
+      {
+        "id": "PGpPe_slicer_1",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "ProductName"
+      },
+      {
+        "id": "PGpPe_slicer_2",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Category"
+      },
+      {
+        "id": "PGpPe_slicer_3",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "CustomerName"
+      },
+      {
+        "id": "slicer_for_fp_dimension_selector_XRvpz",
+        "agent": "visual",
+        "status": "migrated",
+        "confidence": 0.95,
+        "review_reason": "",
+        "source_name": "Sales by Product Dimension Selector"
+      }
+    ],
+    "needs_review": [
+      {
+        "id": "tbl_saleschannels",
+        "agent": "data_model",
+        "status": "migrated_needs_review",
+        "confidence": 0.5,
+        "review_reason": "Table 'SalesChannels' loads all columns from an external file; its columns are detected at refresh time, so no field list exists. Configure the source path in Power BI — columns will be created on first refresh.",
+        "source_name": "SalesChannels"
+      },
+      {
+        "id": "kpi_latest_year_sales",
+        "agent": "measure",
+        "status": "migrated_needs_review",
+        "confidence": 0.9,
+        "review_reason": "The original DAX `Sales[Year] = MAX(Sales[Year])` is context-sensitive and would not consistently return sales for the single latest year in the dataset. The expression has been modified to use `CALCULATE(MAX(Sales[Year]), ALL(Sales))` to correctly identify the latest year regardless of the current filter context.",
+        "source_name": "Latest Year Sales"
+      },
+      {
+        "id": "kpi_latest_month_sales",
+        "agent": "measure",
+        "status": "migrated_needs_review",
+        "confidence": 0.8,
+        "review_reason": "The original DAX expression is not robust and may produce incorrect results depending on the filter context. It has been rewritten to find the latest month across the entire dataset by using REMOVEFILTERS, ensuring it works correctly in any visual. The base measure [Total Sales] is assumed to exist; if not, it must be created first.",
+        "source_name": "Latest Month Sales"
+      },
+      {
+        "id": "pq_customers",
+        "agent": "power_query",
+        "status": "migrated_needs_review",
+        "confidence": 0.9,
+        "review_reason": "This query joins with an external Excel file. The file path for 'Address.xlsx' must be updated to a valid location accessible by Power BI.",
+        "source_name": "Customers"
+      },
+      {
+        "id": "pq_saleschannels",
+        "agent": "power_query",
+        "status": "migrated_needs_review",
+        "confidence": 0.8,
+        "review_reason": "This query loads from an external CSV file. The file path for 'Channels.csv' must be updated. The columns are not defined and will be detected automatically from the file upon refresh.",
+        "source_name": "SalesChannels"
+      },
+      {
+        "id": "mmrZJr",
+        "agent": "visual",
+        "status": "migrated_needs_review",
+        "confidence": 0.75,
+        "review_reason": "Role 'Tooltips' not valid for pieChart.",
+        "source_name": "Sales by Category 2026"
+      }
+    ],
+    "not_migrated": []
+  }
+}

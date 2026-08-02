@@ -4,10 +4,10 @@ table Sales
 	column 'Order ID'
 		dataType: int64
 		lineageTag: 1713f23b-38f4-4c81-a17b-3d5ab91e6b02
-		summarizeBy: count
+		summarizeBy: none
 		sourceColumn: Order ID
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column 'Order Date'
 		dataType: dateTime
@@ -23,18 +23,18 @@ table Sales
 	column Year
 		dataType: int64
 		lineageTag: fadec7e7-5ccc-4904-b3a4-02aefdb0fe35
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: Year
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column Month
 		dataType: int64
 		lineageTag: 047bd786-5d5a-41a7-99ed-0653ae8924ad
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: Month
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column 'Customer ID'
 		dataType: string
@@ -51,10 +51,10 @@ table Sales
 	column 'Channel ID'
 		dataType: int64
 		lineageTag: cb9c88c2-a761-491d-8571-fe2587d36416
-		summarizeBy: count
+		summarizeBy: none
 		sourceColumn: Channel ID
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column Region
 		dataType: string
@@ -65,28 +65,28 @@ table Sales
 	column 'Sales Amount'
 		dataType: double
 		lineageTag: 69ae9df1-e36b-432b-80da-a20ff6dc7f77
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: Sales Amount
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
 	column Quantity
 		dataType: int64
 		lineageTag: 2b7aa040-5df4-4d68-9441-6672f53e6721
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: Quantity
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 	column Margin
 		dataType: double
 		lineageTag: 75b2cef5-4986-46f0-bb7e-d697cdd178ac
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: Margin
 
-		annotation SummarizationSetBy = Automatic
+		annotation SummarizationSetBy = User
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 

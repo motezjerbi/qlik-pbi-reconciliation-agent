@@ -1,0 +1,640 @@
+{
+  "sheets": [
+    {
+      "id": "jYEX",
+      "name": "Advanced Analytics",
+      "objects": [
+        {
+          "id": "nAjkp",
+          "type": "action-button",
+          "name": "nAjkp",
+          "sheet": "Advanced Analytics",
+          "expression": "",
+          "dimensions": [],
+          "measures": [],
+          "value": null
+        },
+        {
+          "id": "HmbRgn",
+          "type": "action-button",
+          "name": "HmbRgn",
+          "sheet": "Advanced Analytics",
+          "expression": "",
+          "dimensions": [],
+          "measures": [],
+          "value": null
+        },
+        {
+          "id": "qrEMJ",
+          "type": "barchart",
+          "name": "Sales by Product",
+          "sheet": "Advanced Analytics",
+          "expression": "Sales Amount",
+          "dimensions": [
+            "Name_Product"
+          ],
+          "measures": [
+            "Sales Amount"
+          ],
+          "value": "NaN"
+        },
+        {
+          "id": "EsbcAzT",
+          "type": "kpi",
+          "name": "Evolution Y vs Y-1",
+          "sheet": "Advanced Analytics",
+          "expression": "Evolution Y vs Y-1",
+          "dimensions": [],
+          "measures": [
+            "Evolution Y vs Y-1"
+          ],
+          "value": 1.342857142857143
+        },
+        {
+          "id": "PAMjnV",
+          "type": "barchart",
+          "name": "Sales by channel",
+          "sheet": "Advanced Analytics",
+          "expression": "Sales Amount",
+          "dimensions": [
+            "Channel"
+          ],
+          "measures": [
+            "Sales Amount"
+          ],
+          "value": "NaN"
+        }
+      ]
+    },
+    {
+      "id": "mDdPRH",
+      "name": "Executive Overview",
+      "objects": [
+        {
+          "id": "HSDwJeV",
+          "type": "kpi",
+          "name": "Total Sales",
+          "sheet": "Executive Overview",
+          "expression": "Total Sales",
+          "dimensions": [],
+          "measures": [
+            "Total Sales"
+          ],
+          "value": 5850
+        },
+        {
+          "id": "dTQJ",
+          "type": "kpi",
+          "name": "Current Year Sales",
+          "sheet": "Executive Overview",
+          "expression": "Current Year Sales",
+          "dimensions": [],
+          "measures": [
+            "Current Year Sales"
+          ],
+          "value": 0
+        },
+        {
+          "id": "mPSaEm",
+          "type": "barchart",
+          "name": "Sales by Region",
+          "sheet": "Executive Overview",
+          "expression": "Sum(SalesAmount)",
+          "dimensions": [
+            "Région"
+          ],
+          "measures": [
+            "Sum(SalesAmount)"
+          ],
+          "value": "NaN"
+        },
+        {
+          "id": "mpGZEY",
+          "type": "linechart",
+          "name": "Monthly Trend",
+          "sheet": "Executive Overview",
+          "expression": "Total Sales Princ",
+          "dimensions": [
+            "Month"
+          ],
+          "measures": [
+            "Total Sales Princ"
+          ],
+          "value": 1
+        },
+        {
+          "id": "HZejzW",
+          "type": "table",
+          "name": "Product Performance",
+          "sheet": "Executive Overview",
+          "expression": "Total Sales",
+          "dimensions": [
+            "ProductName",
+            "Category"
+          ],
+          "measures": [
+            "Total Sales",
+            "Margin",
+            "Orders"
+          ],
+          "value": null
+        },
+        {
+          "id": "wBSDPDm",
+          "type": "sn-tabbed-container",
+          "name": "wBSDPDm",
+          "sheet": "Executive Overview",
+          "expression": "",
+          "dimensions": [],
+          "measures": [],
+          "value": null
+        },
+        {
+          "id": "mAk",
+          "type": "kpi",
+          "name": "Max Year Sales",
+          "sheet": "Executive Overview",
+          "expression": "Max Year Sales",
+          "dimensions": [],
+          "measures": [
+            "Max Year Sales"
+          ],
+          "value": 4100
+        },
+        {
+          "id": "LfPAmB",
+          "type": "kpi",
+          "name": "Max Year Sales",
+          "sheet": "Executive Overview",
+          "expression": "Max Year Sales",
+          "dimensions": [],
+          "measures": [
+            "Max Year Sales"
+          ],
+          "value": 2000
+        }
+      ]
+    },
+    {
+      "id": "ygZMvds",
+      "name": "Advanced Metrics",
+      "objects": [
+        {
+          "id": "nGPLCJ",
+          "type": "kpi",
+          "name": "Previous Year",
+          "sheet": "Advanced Metrics",
+          "expression": "Previous Year",
+          "dimensions": [],
+          "measures": [
+            "Previous Year"
+          ],
+          "value": 1750
+        },
+        {
+          "id": "JqmHry",
+          "type": "kpi",
+          "name": "YTD",
+          "sheet": "Advanced Metrics",
+          "expression": "YTD",
+          "dimensions": [],
+          "measures": [
+            "YTD"
+          ],
+          "value": 0
+        },
+        {
+          "id": "ESdjMGc",
+          "type": "kpi",
+          "name": "Distinct Customers",
+          "sheet": "Advanced Metrics",
+          "expression": "Distinct Customers",
+          "dimensions": [],
+          "measures": [
+            "Distinct Customers"
+          ],
+          "value": 4
+        },
+        {
+          "id": "AcFzzN",
+          "type": "barchart",
+          "name": "Sales by Region",
+          "sheet": "Advanced Metrics",
+          "expression": "Sum(SalesAmount)",
+          "dimensions": [
+            "Category",
+            "Région"
+          ],
+          "measures": [
+            "Sum(SalesAmount)"
+          ],
+          "value": null
+        },
+        {
+          "id": "mmrZJr",
+          "type": "barchart",
+          "name": "Sales by Category 2026",
+          "sheet": "Advanced Metrics",
+          "expression": "Sales Amount",
+          "dimensions": [
+            "Category"
+          ],
+          "measures": [
+            "Sales Amount"
+          ],
+          "value": "NaN"
+        },
+        {
+          "id": "XRvpz",
+          "type": "barchart",
+          "name": "Sales by Product",
+          "sheet": "Advanced Metrics",
+          "expression": "Sales Amount",
+          "dimensions": [
+            "Name_Product"
+          ],
+          "measures": [
+            "Sales Amount"
+          ],
+          "value": "NaN"
+        },
+        {
+          "id": "PGpPe",
+          "type": "filterpane",
+          "name": "PGpPe",
+          "sheet": "Advanced Metrics",
+          "expression": "",
+          "dimensions": [],
+          "measures": [],
+          "value": null
+        },
+        {
+          "id": "BFrxVB",
+          "type": "qlik-network-chart",
+          "name": "Total Sales Princ",
+          "sheet": "Advanced Metrics",
+          "expression": "Total Sales Princ",
+          "dimensions": [
+            "ProductID",
+            "ProductName",
+            "CustomerName",
+            "ProductGroupe"
+          ],
+          "measures": [
+            "Total Sales Princ"
+          ],
+          "value": "NaN"
+        },
+        {
+          "id": "RcJmws",
+          "type": "kpi",
+          "name": "Total Sales",
+          "sheet": "Advanced Metrics",
+          "expression": "Total Sales",
+          "dimensions": [],
+          "measures": [
+            "Total Sales"
+          ],
+          "value": 2900
+        },
+        {
+          "id": "t",
+          "type": "kpi",
+          "name": "Avg Sales",
+          "sheet": "Advanced Metrics",
+          "expression": "Avg Sales",
+          "dimensions": [],
+          "measures": [
+            "Avg Sales"
+          ],
+          "value": 1462.5
+        }
+      ]
+    }
+  ],
+  "kpis": [
+    {
+      "id": "EsbcAzT",
+      "type": "kpi",
+      "name": "Evolution Y vs Y-1",
+      "sheet": "Advanced Analytics",
+      "expression": "Evolution Y vs Y-1",
+      "dimensions": [],
+      "measures": [
+        "Evolution Y vs Y-1"
+      ],
+      "value": 1.342857142857143
+    },
+    {
+      "id": "HSDwJeV",
+      "type": "kpi",
+      "name": "Total Sales",
+      "sheet": "Executive Overview",
+      "expression": "Total Sales",
+      "dimensions": [],
+      "measures": [
+        "Total Sales"
+      ],
+      "value": 5850
+    },
+    {
+      "id": "dTQJ",
+      "type": "kpi",
+      "name": "Current Year Sales",
+      "sheet": "Executive Overview",
+      "expression": "Current Year Sales",
+      "dimensions": [],
+      "measures": [
+        "Current Year Sales"
+      ],
+      "value": 0
+    },
+    {
+      "id": "mAk",
+      "type": "kpi",
+      "name": "Max Year Sales",
+      "sheet": "Executive Overview",
+      "expression": "Max Year Sales",
+      "dimensions": [],
+      "measures": [
+        "Max Year Sales"
+      ],
+      "value": 4100
+    },
+    {
+      "id": "LfPAmB",
+      "type": "kpi",
+      "name": "Max Year Sales",
+      "sheet": "Executive Overview",
+      "expression": "Max Year Sales",
+      "dimensions": [],
+      "measures": [
+        "Max Year Sales"
+      ],
+      "value": 2000
+    },
+    {
+      "id": "nGPLCJ",
+      "type": "kpi",
+      "name": "Previous Year",
+      "sheet": "Advanced Metrics",
+      "expression": "Previous Year",
+      "dimensions": [],
+      "measures": [
+        "Previous Year"
+      ],
+      "value": 1750
+    },
+    {
+      "id": "JqmHry",
+      "type": "kpi",
+      "name": "YTD",
+      "sheet": "Advanced Metrics",
+      "expression": "YTD",
+      "dimensions": [],
+      "measures": [
+        "YTD"
+      ],
+      "value": 0
+    },
+    {
+      "id": "ESdjMGc",
+      "type": "kpi",
+      "name": "Distinct Customers",
+      "sheet": "Advanced Metrics",
+      "expression": "Distinct Customers",
+      "dimensions": [],
+      "measures": [
+        "Distinct Customers"
+      ],
+      "value": 4
+    },
+    {
+      "id": "RcJmws",
+      "type": "kpi",
+      "name": "Total Sales",
+      "sheet": "Advanced Metrics",
+      "expression": "Total Sales",
+      "dimensions": [],
+      "measures": [
+        "Total Sales"
+      ],
+      "value": 2900
+    },
+    {
+      "id": "t",
+      "type": "kpi",
+      "name": "Avg Sales",
+      "sheet": "Advanced Metrics",
+      "expression": "Avg Sales",
+      "dimensions": [],
+      "measures": [
+        "Avg Sales"
+      ],
+      "value": 1462.5
+    }
+  ],
+  "visuals": [
+    {
+      "id": "nAjkp",
+      "type": "action-button",
+      "name": "nAjkp",
+      "sheet": "Advanced Analytics",
+      "expression": "",
+      "dimensions": [],
+      "measures": [],
+      "value": null
+    },
+    {
+      "id": "HmbRgn",
+      "type": "action-button",
+      "name": "HmbRgn",
+      "sheet": "Advanced Analytics",
+      "expression": "",
+      "dimensions": [],
+      "measures": [],
+      "value": null
+    },
+    {
+      "id": "qrEMJ",
+      "type": "barchart",
+      "name": "Sales by Product",
+      "sheet": "Advanced Analytics",
+      "expression": "Sales Amount",
+      "dimensions": [
+        "Name_Product"
+      ],
+      "measures": [
+        "Sales Amount"
+      ],
+      "value": "NaN"
+    },
+    {
+      "id": "PAMjnV",
+      "type": "barchart",
+      "name": "Sales by channel",
+      "sheet": "Advanced Analytics",
+      "expression": "Sales Amount",
+      "dimensions": [
+        "Channel"
+      ],
+      "measures": [
+        "Sales Amount"
+      ],
+      "value": "NaN"
+    },
+    {
+      "id": "mPSaEm",
+      "type": "barchart",
+      "name": "Sales by Region",
+      "sheet": "Executive Overview",
+      "expression": "Sum(SalesAmount)",
+      "dimensions": [
+        "Région"
+      ],
+      "measures": [
+        "Sum(SalesAmount)"
+      ],
+      "value": "NaN"
+    },
+    {
+      "id": "mpGZEY",
+      "type": "linechart",
+      "name": "Monthly Trend",
+      "sheet": "Executive Overview",
+      "expression": "Total Sales Princ",
+      "dimensions": [
+        "Month"
+      ],
+      "measures": [
+        "Total Sales Princ"
+      ],
+      "value": 1
+    },
+    {
+      "id": "HZejzW",
+      "type": "table",
+      "name": "Product Performance",
+      "sheet": "Executive Overview",
+      "expression": "Total Sales",
+      "dimensions": [
+        "ProductName",
+        "Category"
+      ],
+      "measures": [
+        "Total Sales",
+        "Margin",
+        "Orders"
+      ],
+      "value": null
+    },
+    {
+      "id": "wBSDPDm",
+      "type": "sn-tabbed-container",
+      "name": "wBSDPDm",
+      "sheet": "Executive Overview",
+      "expression": "",
+      "dimensions": [],
+      "measures": [],
+      "value": null
+    },
+    {
+      "id": "AcFzzN",
+      "type": "barchart",
+      "name": "Sales by Region",
+      "sheet": "Advanced Metrics",
+      "expression": "Sum(SalesAmount)",
+      "dimensions": [
+        "Category",
+        "Région"
+      ],
+      "measures": [
+        "Sum(SalesAmount)"
+      ],
+      "value": null
+    },
+    {
+      "id": "mmrZJr",
+      "type": "barchart",
+      "name": "Sales by Category 2026",
+      "sheet": "Advanced Metrics",
+      "expression": "Sales Amount",
+      "dimensions": [
+        "Category"
+      ],
+      "measures": [
+        "Sales Amount"
+      ],
+      "value": "NaN"
+    },
+    {
+      "id": "XRvpz",
+      "type": "barchart",
+      "name": "Sales by Product",
+      "sheet": "Advanced Metrics",
+      "expression": "Sales Amount",
+      "dimensions": [
+        "Name_Product"
+      ],
+      "measures": [
+        "Sales Amount"
+      ],
+      "value": "NaN"
+    },
+    {
+      "id": "PGpPe",
+      "type": "filterpane",
+      "name": "PGpPe",
+      "sheet": "Advanced Metrics",
+      "expression": "",
+      "dimensions": [],
+      "measures": [],
+      "value": null
+    },
+    {
+      "id": "BFrxVB",
+      "type": "qlik-network-chart",
+      "name": "Total Sales Princ",
+      "sheet": "Advanced Metrics",
+      "expression": "Total Sales Princ",
+      "dimensions": [
+        "ProductID",
+        "ProductName",
+        "CustomerName",
+        "ProductGroupe"
+      ],
+      "measures": [
+        "Total Sales Princ"
+      ],
+      "value": "NaN"
+    }
+  ],
+  "measures": [
+    {
+      "id": "ybfzu",
+      "name": "Total Sales Princ",
+      "expression": "Sum(SalesAmount)",
+      "tags": []
+    }
+  ],
+  "dimensions": [
+    {
+      "id": "SdLaQv",
+      "name": "Région",
+      "field": "",
+      "tags": []
+    },
+    {
+      "id": "eAaFdp",
+      "name": "Category_Product",
+      "field": "",
+      "tags": []
+    }
+  ],
+  "variables": [],
+  "metadata": {
+    "source": "engine_api",
+    "file": "sales_demo.qvf",
+    "type": "Qlik Sense Desktop (Engine API)"
+  }
+}
