@@ -212,10 +212,86 @@ def detect_malformed_columns(pbi_result: Dict) -> List[Dict]:
     return findings
 
 
+def detect_orphan_tables(pbi_result: Dict) -> List[Dict]:
+    """Repère les tables Power BI sans AUCUNE relation avec le reste du modèle
+    (ni source ni cible d'une relation). Qlik relie ses tables automatiquement
+    par les noms de champs communs (modèle associatif) — une table isolée côté
+    Power BI n'a souvent pas cet équivalent implicite, donc mérite une
+    vérification : c'est peut-être volontaire (table de paramètres), ou un
+    oubli de relation à la migration.
+
+    Exclut les tables techniques internes que Power BI crée lui-même et qui
+    n'ont jamais de relation par construction (table de date auto-générée,
+    table conteneur de mesures) — ce ne sont jamais de vrais écarts."""
+    SYSTEM_TABLE_PREFIXES = ("DateTableTemplate", "LocalDateTable", "_Measures")
+
+    findings = []
+    tables = {
+        t.get("name") for t in pbi_result.get("tables", []) or []
+        if t.get("name") and not t["name"].startswith(SYSTEM_TABLE_PREFIXES)
+    }
+    connected = set()
+    for r in pbi_result.get("relationships", []) or []:
+        connected.add(r.get("from_table"))
+        connected.add(r.get("to_table"))
+
+    for table in sorted(tables - connected):
+        findings.append({
+            "source_module": "Module A - Structural Gaps",
+            "libelle": f"Table isolée (aucune relation) : '{table}'",
+            "detail": f"La table '{table}' n'apparaît dans aucune relation du modèle Power BI.",
+            "criticite": "MINEUR",
+            "diagnostic": (
+                "Une table sans relation ne peut pas filtrer ni être filtrée par "
+                "les autres tables du modèle. C'est parfois volontaire (table de "
+                "paramètres, table de sélection), mais peut aussi trahir une "
+                "relation oubliée lors de la migration depuis le modèle "
+                "associatif Qlik (où les tables se relient automatiquement par "
+                "nom de champ commun)."
+            ),
+            "recommandation": "Vérifier si cette table doit être reliée à une autre, ou si l'isolement est intentionnel.",
+            "statut": "TABLE_ISOLEE",
+        })
+    return findings
+
+
+def detect_inactive_relationships(pbi_result: Dict) -> List[Dict]:
+    """Repère les relations Power BI désactivées (IsActive = False). Qlik
+    considère toutes les associations comme actives par défaut ; une relation
+    désactivée côté Power BI n'a d'effet que si une mesure DAX l'active
+    explicitement via USERELATIONSHIP — sinon elle est silencieusement
+    ignorée, ce qui peut expliquer un écart de valeur sans cause évidente."""
+    findings = []
+    for r in pbi_result.get("relationships", []) or []:
+        if r.get("is_active") is False:
+            findings.append({
+                "source_module": "Module A - Structural Gaps",
+                "libelle": f"Relation inactive : '{r.get('from_table')}' → '{r.get('to_table')}'",
+                "detail": (
+                    f"{r.get('from_table')}[{(r.get('from_column') or '').split('[')[-1].rstrip(']')}] "
+                    f"→ {r.get('to_table')}[{(r.get('to_column') or '').split('[')[-1].rstrip(']')}] "
+                    "— relation présente dans le modèle mais désactivée."
+                ),
+                "criticite": "MINEUR",
+                "diagnostic": (
+                    "Une relation désactivée n'a aucun effet sur les calculs, sauf "
+                    "si une mesure l'active explicitement avec USERELATIONSHIP. "
+                    "Si l'équivalent Qlik de cette association était censé "
+                    "toujours filtrer, cet écart peut expliquer un résultat "
+                    "inattendu sans erreur visible."
+                ),
+                "recommandation": "Vérifier si une mesure utilise USERELATIONSHIP sur cette relation, sinon l'activer si elle doit filtrer par défaut.",
+                "statut": "RELATION_INACTIVE",
+            })
+    return findings
+
+
 def detect_structural_gaps(qlik_result: Dict, pbi_result: Dict) -> List[Dict]:
-    """Point d'entrée unique : combine les trois détections ci-dessus."""
+    """Point d'entrée unique : combine toutes les détections structurelles."""
     return (
         detect_dimension_gaps(qlik_result, pbi_result)
         + detect_visual_count_gaps(qlik_result, pbi_result)
         + detect_malformed_columns(pbi_result)
+        + detect_orphan_tables(pbi_result)
+        + detect_inactive_relationships(pbi_result)
     )

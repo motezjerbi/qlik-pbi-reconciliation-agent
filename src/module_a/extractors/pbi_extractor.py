@@ -114,8 +114,10 @@ class PBIExtractor:
             "pages": live_result.get("pages", []),
             "visuals": live_result.get("visuals", []),
             "columns": live_result.get("columns", []),
+            "power_query": live_result.get("power_query", []),
+            "roles": live_result.get("roles", []),
             "tables_data": live_result.get("tables_data", {}),
-            "relationships": [],
+            "relationships": live_result.get("relationships", []),
             "calculated_columns": [],
             "metadata": {
                 "source": "pbix_live_adomd",
@@ -129,6 +131,7 @@ class PBIExtractor:
         result["metadata"]["kpis_count"] = len(result["kpis"])
         result["metadata"]["pages_count"] = len(result["pages"])
         result["metadata"]["columns_count"] = len(result["columns"])
+        result["metadata"]["power_query_count"] = len(result["power_query"])
         result["metadata"]["tables_data_count"] = len(result["tables_data"])
         return result
 

@@ -59,9 +59,16 @@ class LLMClient:
             return True
         return self._check_connection()
 
-    def ask(self, prompt: str) -> str:
+    def ask(self, prompt: str, timeout: int = 90, num_predict: int = 300) -> str:
         """Envoie une requête à Ollama. Retourne une erreur explicite si ça échoue,
-        jamais une réponse simulée."""
+        jamais une réponse simulée.
+
+        `timeout` et `num_predict` sont réglables par appel : le mapping Module B
+        (réponses courtes à 3 lignes) reste sur les valeurs par défaut historiques,
+        mais un appelant qui demande une génération plus longue (ex. génération de
+        correctif DAX) peut passer un timeout plus élevé sans changer le comportement
+        des autres appels.
+        """
         if not self._ensure_connection():
             return self._error_response(self._connection_error or "Ollama indisponible")
 
@@ -73,12 +80,12 @@ class LLMClient:
                     "prompt": prompt,
                     "stream": False,
                     "options": {
-                        "num_predict": 300,
+                        "num_predict": num_predict,
                         "temperature": 0.2,
                         "top_p": 0.9,
                     },
                 },
-                timeout=90,  # l'inférence locale peut être lente selon le CPU/GPU
+                timeout=timeout,  # l'inférence locale peut être lente selon le CPU/GPU
             )
 
             if response.status_code != 200:
@@ -93,7 +100,7 @@ class LLMClient:
             return result
 
         except requests.exceptions.Timeout:
-            return self._error_response("Timeout Ollama (>90s) - le modèle est peut-être surchargé")
+            return self._error_response(f"Timeout Ollama (>{timeout}s) - le modèle est peut-être surchargé")
         except requests.exceptions.RequestException as e:
             return self._error_response(f"Erreur de connexion Ollama : {e}")
 
@@ -107,10 +114,14 @@ class LLMClient:
 llm_client = LLMClient()
 
 
-def ask_claude(prompt: str) -> str:
+def ask_claude(prompt: str, timeout: int = 90, num_predict: int = 300) -> str:
     """Interface compatible avec le code existant (module_b/mapping.py).
-    Le nom est historique ; le backend réel est Ollama/Mistral en local."""
-    return llm_client.ask(prompt)
+    Le nom est historique ; le backend réel est Ollama/Mistral en local.
+
+    timeout / num_predict : optionnels, valeurs par défaut identiques au
+    comportement historique. Un appelant peut les augmenter pour une tâche
+    de génération plus longue (ex. dax_fix_generator.py)."""
+    return llm_client.ask(prompt, timeout=timeout, num_predict=num_predict)
 
 
 if __name__ == "__main__":

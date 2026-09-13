@@ -9,10 +9,46 @@ chiffre à chaque génération serait pire qu'inutile pour un consultant qui
 doit s'y fier rapidement — mieux vaut un texte prévisible et toujours exact.
 """
 
-from typing import List, Dict
+from typing import List, Dict, Optional
 from datetime import datetime
 from collections import Counter
 from .merge_advanced import Finding
+
+
+def compute_health_score(findings: List[Finding], coverage_rate: Optional[float] = None) -> Dict:
+    """
+    Score de santé global 0-100, par pénalité déterministe (pas de LLM,
+    même logique que le résumé exécutif — reproductible et sans invention).
+
+    - Part de 100, retire des points par finding selon sa criticité
+      (BLOQUANT -15, MAJEUR -6, MINEUR -2), plancher à 0.
+    - Si un taux de couverture Module B est fourni, le score final mélange
+      70% pénalité (Module A + écarts structurels) et 30% couverture
+      fonctionnelle (Module B) — les deux comptent, mais les écarts de
+      données pèsent plus lourd qu'une lacune fonctionnelle isolée.
+
+    Retourne un dict {"score": int, "niveau": str} — le niveau est une
+    étiquette lisible (EXCELLENT/BON/MOYEN/CRITIQUE), pas une couleur.
+    """
+    penalites = {"BLOQUANT": 15, "MAJEUR": 6, "MINEUR": 2}
+    penalite_totale = sum(penalites.get(f.criticite, 2) for f in findings)
+    score_penalite = max(0, 100 - penalite_totale)
+
+    if coverage_rate is not None:
+        score = round(0.7 * score_penalite + 0.3 * coverage_rate)
+    else:
+        score = score_penalite
+
+    if score >= 90:
+        niveau = "EXCELLENT"
+    elif score >= 70:
+        niveau = "BON"
+    elif score >= 50:
+        niveau = "MOYEN"
+    else:
+        niveau = "CRITIQUE"
+
+    return {"score": int(score), "niveau": niveau}
 
 
 def generate_executive_summary(findings: List[Finding]) -> str:
@@ -77,15 +113,20 @@ def generate_executive_summary(findings: List[Finding]) -> str:
     return "\n".join(lines)
 
 
-def generate_report(findings: List[Finding]) -> str:
+def generate_report(findings: List[Finding], coverage_rate: Optional[float] = None) -> str:
     """
     Génère un rapport Markdown à partir des findings.
+    coverage_rate : taux de couverture Module B (0-100), optionnel, pour
+    affiner le score de santé global.
     """
     if not findings:
         return "# Rapport d'Audit\n\nAucun finding à signaler."
 
     report = "# 📊 Rapport d'Audit de Migration\n\n"
     report += f"**Date :** {datetime.now().strftime('%d/%m/%Y %H:%M')}\n\n"
+
+    health = compute_health_score(findings, coverage_rate)
+    report += f"## 🩺 Score de santé global : {health['score']}/100 ({health['niveau']})\n\n"
 
     report += "## 🧭 Résumé exécutif\n\n"
     report += generate_executive_summary(findings) + "\n\n"
@@ -119,10 +160,10 @@ def generate_report(findings: List[Finding]) -> str:
     return report
 
 
-def export_report(findings: List[Finding], filepath: str) -> None:
+def export_report(findings: List[Finding], filepath: str, coverage_rate: Optional[float] = None) -> None:
     """
     Exporte le rapport vers un fichier.
     """
-    report = generate_report(findings)
+    report = generate_report(findings, coverage_rate)
     with open(filepath, 'w', encoding='utf-8') as f:
         f.write(report)

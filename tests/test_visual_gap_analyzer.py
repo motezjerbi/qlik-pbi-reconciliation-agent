@@ -16,6 +16,8 @@ from module_a.visual_gap_analyzer import (
     detect_dimension_gaps,
     detect_visual_count_gaps,
     detect_malformed_columns,
+    detect_orphan_tables,
+    detect_inactive_relationships,
 )
 
 
@@ -68,6 +70,33 @@ class TestVisualCountGaps:
         pbi = {"visuals": [{"page": "Executive Overview", "name": "V1"}]}
         findings = detect_visual_count_gaps(qlik, pbi)
         assert any("manquants" in f["libelle"] for f in findings)
+
+
+class TestRelations:
+    def test_table_sans_relation_est_signalee(self):
+        pbi = {
+            "tables": [{"name": "Sales"}, {"name": "ParamTable"}],
+            "relationships": [{"from_table": "Sales", "to_table": "Sales", "is_active": True}],
+        }
+        findings = detect_orphan_tables(pbi)
+        assert len(findings) == 1
+        assert "ParamTable" in findings[0]["libelle"]
+
+    def test_table_avec_relation_non_signalee(self):
+        pbi = {
+            "tables": [{"name": "Sales"}, {"name": "Customers"}],
+            "relationships": [{"from_table": "Sales", "to_table": "Customers", "is_active": True}],
+        }
+        assert detect_orphan_tables(pbi) == []
+
+    def test_relation_inactive_signalee(self):
+        pbi = {"relationships": [{"from_table": "A", "to_table": "B", "is_active": False}]}
+        findings = detect_inactive_relationships(pbi)
+        assert len(findings) == 1
+
+    def test_relation_active_non_signalee(self):
+        pbi = {"relationships": [{"from_table": "A", "to_table": "B", "is_active": True}]}
+        assert detect_inactive_relationships(pbi) == []
 
 
 class TestColonnesMalformees:

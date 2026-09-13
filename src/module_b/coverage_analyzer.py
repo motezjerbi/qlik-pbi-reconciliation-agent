@@ -23,6 +23,7 @@ class PatternCoverage:
     statut: str  # COUVERT, PARTIELLEMENT_COUVERT, NON_COUVERT
     mesure_dax: Optional[str] = None
     mesure_dax_expr: Optional[str] = None
+    source_equivalent: Optional[str] = None  # "DAX" ou "Power Query"
     justification: str = ""
     recommandation: str = ""
     criticite: str = "MINEUR"
@@ -55,16 +56,28 @@ DAX_KEYWORD_MAP: Dict[str, List[str]] = {
     "mapping_load": ["LOOKUPVALUE", "RELATED("],
     "subroutine_definition": [],
     "subroutine_call": [],
-    "resident_group_by": ["SUMMARIZE", "GROUPBY"],
-    "left_join": ["NATURALLEFTOUTERJOIN", "RELATED(", "RELATEDTABLE"],
+    "resident_group_by": [],  # vérifié côté Power Query (Table.Group), pas DAX
+    "left_join": [],  # vérifié côté Power Query (Table.Join/NestedJoin), pas DAX
     "load_inline": [],
-    "load_from_file": [],
+    "load_from_file": [],  # vérifié côté Power Query (connecteurs de source)
     "aggr": ["SUMMARIZE", "GROUPBY", "SUMMARIZECOLUMNS"],
     "nested_aggr": ["SUMMARIZECOLUMNS"],
     "if_condition": ["IF(", "SWITCH("],
     "peek_previous": ["EARLIER(", "OFFSET("],
     "range_sum": ["RUNNINGSUM", "CALCULATE"],
     "section_access": [],  # RLS : se vérifie dans les rôles de sécurité PBI, pas dans une mesure
+}
+
+# Patterns Qlik qui sont des concepts de CHARGEMENT de données (pas de calcul) :
+# leur vrai équivalent Power BI est en Power Query (M), pas dans une mesure DAX.
+# Chercher leur mot-clé côté DAX serait une inadéquation de catégorie.
+M_KEYWORD_MAP: Dict[str, List[str]] = {
+    "mapping_load": ["Table.NestedJoin", "Table.AddColumn", "List.Contains"],
+    "mapping_applymap": ["Table.NestedJoin", "Table.AddColumn"],
+    "left_join": ["Table.NestedJoin", "Table.Join(", "Table.Combine"],
+    "resident_group_by": ["Table.Group"],
+    "load_from_file": ["Csv.Document", "Excel.Workbook", "Json.Document", "Sql.Database", "Web.Contents"],
+    "load_inline": ["#table("],
 }
 
 
@@ -77,6 +90,8 @@ class FunctionalCoverageAnalyzer:
     def __init__(self):
         self.patterns = self._load_taxonomy()
         self.dax_measures: List[Dict[str, str]] = []
+        self.power_query: List[Dict[str, str]] = []
+        self.roles: List[Dict[str, str]] = []
         self.qlik_variables = {}
 
     def _load_taxonomy(self) -> Dict:
@@ -275,6 +290,8 @@ class FunctionalCoverageAnalyzer:
         qlik_script: str,
         qlik_expressions: str,
         dax_measures: List[Dict[str, str]],
+        power_query: Optional[List[Dict[str, str]]] = None,
+        roles: Optional[List[Dict[str, str]]] = None,
     ) -> CoverageReport:
         """
         Analyse complète de la couverture fonctionnelle.
@@ -285,8 +302,14 @@ class FunctionalCoverageAnalyzer:
             (ou "expression" à la place de "dax", les deux sont acceptés) —
             c'est exactement le format déjà produit par pbi_extractor.py /
             qlik_extractor.py, pas besoin d'un fichier séparé à format spécial.
+        power_query : liste de dicts {"table": ..., "m_code": ...} — le code M
+            de chaque table, pour vérifier les patterns de chargement/jointure
+            (Mapping LOAD, Left Join, Resident Group By...) qui se migrent en
+            Power Query, pas en mesure DAX.
         """
         self.dax_measures = self._normalize_measures(dax_measures)
+        self.power_query = power_query or []
+        self.roles = roles or []
 
         patterns = self.detect_patterns(qlik_script, qlik_expressions)
         self.qlik_variables = self.extract_variables(
@@ -433,7 +456,58 @@ class FunctionalCoverageAnalyzer:
                 "recommandation": "Analyse manuelle requise", "criticite": "MAJEUR", "confiance": 0.3,
             })
 
-            matching_measure = self._find_matching_measure(pattern_type, dax_measures)
+            # Cas spécial : Section Access ne se vérifie pas par mot-clé dans une
+            # mesure/requête, mais par la présence réelle de rôles RLS (Row Level
+            # Security) dans le modèle Power BI — vérification dynamique plutôt
+            # qu'un statut NON_COUVERT toujours assumé.
+            if pattern_type == "section_access":
+                roles_avec_filtre = [r for r in self.roles if (r.get("filter_expression") or "").strip()]
+                matching_measure = None
+                if roles_avec_filtre:
+                    statut = "PARTIELLEMENT_COUVERT"
+                    confiance = 0.6
+                    noms = ", ".join(sorted({r["role"] for r in roles_avec_filtre})[:3])
+                    rule = {
+                        "statut": statut,
+                        "justification": (
+                            f"Section Access Qlik : {len(roles_avec_filtre)} rôle(s) RLS avec filtre "
+                            f"trouvé(s) côté Power BI ({noms}). La présence de RLS est confirmée, mais "
+                            f"l'équivalence EXACTE de la logique de filtrage doit être vérifiée manuellement."
+                        ),
+                        "recommandation": "Comparer la logique du filtre RLS Power BI à celle de Section Access Qlik, champ par champ.",
+                        "criticite": "MAJEUR", "confiance": confiance,
+                    }
+                elif self.roles:
+                    statut = "PARTIELLEMENT_COUVERT"
+                    rule = {
+                        "statut": statut,
+                        "justification": (
+                            f"Section Access Qlik : {len(self.roles)} rôle(s) Power BI déclaré(s), "
+                            "mais aucun avec un filtre de ligne (FilterExpression) détecté — la sécurité "
+                            "au niveau ligne semble incomplète."
+                        ),
+                        "recommandation": "Vérifier que chaque rôle a bien un filtre DAX défini au niveau des tables concernées.",
+                        "criticite": "BLOQUANT", "confiance": 0.4,
+                    }
+                else:
+                    statut = "NON_COUVERT"
+                    rule = {
+                        "statut": statut,
+                        "justification": "Section Access Qlik détecté, mais AUCUN rôle de sécurité (RLS) n'existe dans le modèle Power BI.",
+                        "recommandation": "Créer des rôles RLS dans Power BI (Modélisation > Gérer les rôles) reproduisant la logique de Section Access.",
+                        "criticite": "BLOQUANT", "confiance": 0.9,
+                    }
+                confiance = rule["confiance"]
+
+                results.append(PatternCoverage(
+                    pattern=pattern_type, expression=pattern["expression_source"], statut=statut,
+                    mesure_dax=None, mesure_dax_expr=None, source_equivalent="RLS" if self.roles else None,
+                    justification=rule["justification"], recommandation=rule["recommandation"],
+                    criticite=rule["criticite"], confiance=confiance,
+                ))
+                continue
+
+            matching_measure = self._find_matching_measure(pattern_type, dax_measures, self.power_query)
 
             statut = rule["statut"]
             confiance = rule["confiance"]
@@ -458,6 +532,7 @@ class FunctionalCoverageAnalyzer:
                 statut=statut,
                 mesure_dax=matching_measure.get("name") if matching_measure else None,
                 mesure_dax_expr=matching_measure.get("dax") if matching_measure else None,
+                source_equivalent=matching_measure.get("source") if matching_measure else None,
                 justification=rule["justification"],
                 recommandation=rule["recommandation"],
                 criticite=rule["criticite"],
@@ -467,25 +542,46 @@ class FunctionalCoverageAnalyzer:
         return results
 
     def _find_matching_measure(
-        self, pattern_type: str, dax_measures: List[Dict[str, str]]
+        self,
+        pattern_type: str,
+        dax_measures: List[Dict[str, str]],
+        power_query: Optional[List[Dict[str, str]]] = None,
     ) -> Optional[Dict[str, str]]:
         """
-        Cherche une mesure DAX candidate par MOTS-CLÉS génériques dans l'expression
-        réelle (pas par nom de mesure) — fonctionne sur n'importe quel rapport.
-        Retourne la mesure avec le plus de mots-clés trouvés, ou None.
+        Cherche un équivalent candidat par MOTS-CLÉS génériques dans le contenu
+        réel (pas par nom) — fonctionne sur n'importe quel rapport. Cherche dans
+        les mesures DAX (calculs) ET dans le code Power Query (chargement/jointures),
+        selon ce que M_KEYWORD_MAP/DAX_KEYWORD_MAP prévoient pour ce pattern.
+        Retourne le meilleur candidat toutes sources confondues, avec une clé
+        "source" ("DAX" ou "Power Query") en plus de "name"/"dax".
         """
-        keywords = DAX_KEYWORD_MAP.get(pattern_type, [])
-        if not keywords or not dax_measures:
-            return None
-
         best_measure, best_hits = None, 0
-        for m in dax_measures:
-            expr_upper = (m.get("dax") or "").upper()
-            if not expr_upper:
-                continue
-            hits = sum(1 for kw in keywords if kw.upper() in expr_upper)
-            if hits > best_hits:
-                best_hits, best_measure = hits, m
+
+        dax_keywords = DAX_KEYWORD_MAP.get(pattern_type, [])
+        if dax_keywords and dax_measures:
+            for m in dax_measures:
+                expr_upper = (m.get("dax") or "").upper()
+                if not expr_upper:
+                    continue
+                hits = sum(1 for kw in dax_keywords if kw.upper() in expr_upper)
+                if hits > best_hits:
+                    best_hits = hits
+                    best_measure = {"name": m.get("name"), "dax": m.get("dax"), "source": "DAX"}
+
+        m_keywords = M_KEYWORD_MAP.get(pattern_type, [])
+        if m_keywords and power_query:
+            for pq in power_query:
+                m_code_upper = (pq.get("m_code") or "").upper()
+                if not m_code_upper:
+                    continue
+                hits = sum(1 for kw in m_keywords if kw.upper() in m_code_upper)
+                if hits > best_hits:
+                    best_hits = hits
+                    best_measure = {
+                        "name": f"Power Query : {pq.get('table')}",
+                        "dax": pq.get("m_code", "")[:300],
+                        "source": "Power Query",
+                    }
 
         return best_measure
 
@@ -518,17 +614,21 @@ def analyze_coverage_quick(
     qlik_script: str,
     qlik_expressions: str,
     dax_measures: List[Dict[str, str]],
+    power_query: Optional[List[Dict[str, str]]] = None,
+    roles: Optional[List[Dict[str, str]]] = None,
 ) -> Dict:
     """
     Analyse rapide de la couverture fonctionnelle, utilisée par l'interface Streamlit.
 
     dax_measures : liste de dicts {"name":..., "dax":...} — le format déjà produit
     par pbi_extractor.py (result["dax_measures"]) ou qlik_extractor.py (result["measures"]).
+    power_query : liste de dicts {"table":..., "m_code":...} (result["power_query"]
+    de pbi_extractor.py) — optionnel, pour vérifier les patterns de chargement/jointure.
     Aucun fichier texte à format spécial n'est nécessaire.
     """
     try:
         analyzer = FunctionalCoverageAnalyzer()
-        report = analyzer.analyze_coverage(qlik_script, qlik_expressions, dax_measures)
+        report = analyzer.analyze_coverage(qlik_script, qlik_expressions, dax_measures, power_query, roles)
 
         return {
             "total_patterns": report.statistiques["total"],
@@ -543,6 +643,7 @@ def analyze_coverage_quick(
                     "statut": p.statut,
                     "mesure_dax": p.mesure_dax,
                     "mesure_dax_expr": p.mesure_dax_expr,
+                    "source_equivalent": p.source_equivalent,
                     "justification": p.justification,
                     "criticite": p.criticite,
                     "confiance": p.confiance,

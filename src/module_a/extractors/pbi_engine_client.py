@@ -41,6 +41,7 @@ def extract_app_structure(pbix_path: str) -> Dict:
     """Extraction complète pour le Module A, via connexion live au moteur."""
     result = {
         "tables": [], "measures": [], "dimensions": [], "kpis": [], "columns": [],
+        "power_query": [], "roles": [], "relationships": [],
         "metadata": {"source": "adomd_engine", "file": Path(pbix_path).name},
     }
 
@@ -60,19 +61,91 @@ def extract_app_structure(pbix_path: str) -> Dict:
         print(f"  📊 Tables : {len(result['tables'])}")
 
         # --- Colonnes (pour comparer les dimensions Qlik aux colonnes PBI) ---
+        column_id_to_name = {}
         try:
             columns = _run_dax(
                 conn,
-                "SELECT [TableID], [ExplicitName] FROM $SYSTEM.TMSCHEMA_COLUMNS"
+                "SELECT [ID], [TableID], [ExplicitName] FROM $SYSTEM.TMSCHEMA_COLUMNS"
             )
             for c in columns:
                 col_name = c.get("ExplicitName")
                 table_name = table_id_to_name.get(c.get("TableID"), "")
                 if col_name and table_name:
                     result["columns"].append({"table": table_name, "name": col_name})
+                    column_id_to_name[c.get("ID")] = f"{table_name}[{col_name}]"
             print(f"  📐 Colonnes : {len(result['columns'])}")
         except Exception as e:
             print(f"  ⚠️ Colonnes non récupérées : {e}")
+
+        # --- Relations entre tables ---
+        try:
+            rels = _run_dax(
+                conn,
+                "SELECT [FromTableID], [FromColumnID], [ToTableID], [ToColumnID], "
+                "[IsActive], [CrossFilteringBehavior] FROM $SYSTEM.TMSCHEMA_RELATIONSHIPS"
+            )
+            for r in rels:
+                from_table = table_id_to_name.get(r.get("FromTableID"), "")
+                to_table = table_id_to_name.get(r.get("ToTableID"), "")
+                if from_table and to_table:
+                    result["relationships"].append({
+                        "from_table": from_table,
+                        "from_column": column_id_to_name.get(r.get("FromColumnID"), ""),
+                        "to_table": to_table,
+                        "to_column": column_id_to_name.get(r.get("ToColumnID"), ""),
+                        "is_active": bool(r.get("IsActive")),
+                        "cross_filter": r.get("CrossFilteringBehavior"),
+                    })
+            print(f"  🔗 Relations : {len(result.get('relationships', []))}")
+        except Exception as e:
+            print(f"  ⚠️ Relations non récupérées : {e}")
+
+        # --- Power Query (code M) — table_id_to_name déjà construit ci-dessus ---
+        try:
+            partitions = _run_dax(
+                conn,
+                "SELECT [TableID], [QueryDefinition] FROM $SYSTEM.TMSCHEMA_PARTITIONS"
+            )
+            for p in partitions:
+                m_code = (p.get("QueryDefinition") or "").strip()
+                table_name = table_id_to_name.get(p.get("TableID"), "")
+                if m_code and table_name:
+                    result["power_query"].append({"table": table_name, "m_code": m_code})
+            print(f"  🔧 Requêtes Power Query : {len(result['power_query'])}")
+        except Exception as e:
+            print(f"  ⚠️ Power Query non récupéré : {e}")
+
+        # --- Rôles de sécurité (RLS) — pour vérifier Section Access ---
+        try:
+            roles_raw = _run_dax(conn, "SELECT [ID], [Name] FROM $SYSTEM.TMSCHEMA_ROLES")
+            role_id_to_name = {r.get("ID"): r.get("Name") for r in roles_raw if r.get("Name")}
+
+            roles_with_filter = set()
+            try:
+                perms = _run_dax(
+                    conn,
+                    "SELECT [RoleID], [TableID], [FilterExpression] FROM $SYSTEM.TMSCHEMA_TABLE_PERMISSIONS"
+                )
+                for p in perms:
+                    role_name = role_id_to_name.get(p.get("RoleID"), "")
+                    table_name = table_id_to_name.get(p.get("TableID"), "")
+                    filt = (p.get("FilterExpression") or "").strip()
+                    if role_name and filt:
+                        roles_with_filter.add(role_name)
+                        result["roles"].append({
+                            "role": role_name, "table": table_name, "filter_expression": filt
+                        })
+            except Exception:
+                pass  # certaines versions du moteur n'exposent pas TMSCHEMA_TABLE_PERMISSIONS
+
+            # Rôles déclarés mais sans filtre associé (role vide, sécurité incomplète)
+            for rname in role_id_to_name.values():
+                if rname not in roles_with_filter:
+                    result["roles"].append({"role": rname, "table": "", "filter_expression": ""})
+
+            print(f"  🔒 Rôles de sécurité (RLS) : {len(role_id_to_name)}")
+        except Exception as e:
+            print(f"  ⚠️ Rôles RLS non récupérés : {e}")
 
         measures = _run_dax(
             conn, "SELECT [Name], [Expression] FROM $SYSTEM.TMSCHEMA_MEASURES"
